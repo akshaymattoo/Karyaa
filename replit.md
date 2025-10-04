@@ -1,7 +1,7 @@
 # TaskFlow - To-Do App with Feature Gating
 
 ## Overview
-A beautiful React + TypeScript to-do application with smart task management, Google authentication via Supabase, and feature gating. Users can manage up to 8 tasks across Work and Personal buckets without login. Sign in unlocks Scratchpad (infinite inbox) and Calendar views.
+A beautiful React + TypeScript to-do application with smart task management, Google authentication via Supabase, and feature gating. Users can manage up to 8 tasks per day across Work and Personal buckets without login. Sign in unlocks Scratchpad (infinite inbox) and Calendar views.
 
 ## Project Architecture
 
@@ -53,7 +53,8 @@ The following secrets are required (already configured in Replit Secrets):
 
 ### Tasks Tab (Always Available)
 - Quick add form with title, bucket selector (Work/Personal), and date picker
-- 8-task hard cap with validation
+- 8-task per day hard cap with validation
+- Banner shows remaining task slots for the selected date
 - Filter by All/Work/Personal
 - Date navigation (previous day, today, next day)
 - Three-column layout showing Work and Personal buckets
@@ -63,7 +64,8 @@ The following secrets are required (already configured in Replit Secrets):
 ### Scratchpad Tab (Login Required)
 - Infinite inbox for capturing ideas
 - "Send to Tasks" action that prompts for bucket + date
-- Respects 8-task limit when sending to tasks
+- Respects 8-task per day limit when sending to tasks
+- Shows remaining slots for the selected date
 - Auto-deletes from scratchpad when sent to tasks
 
 ### Calendar Tab (Login Required)
@@ -84,6 +86,11 @@ The following secrets are required (already configured in Replit Secrets):
 - Responsive design with mobile-first approach
 
 ## Recent Changes
+- 2025-10-04: Changed task limit from 8 tasks total to 8 tasks per day
+  - Backend validation now checks limit per date
+  - Frontend task counter shows remaining slots for selected date
+  - Scratchpad "Send to Tasks" respects per-day limit
+  - Migration logic enforces per-day limits when migrating from localStorage
 - 2025-10-04: Initial implementation with all MVP features
 - Schema defined with tasks and scratchpad tables
 - Full frontend built with exceptional visual quality
