@@ -1,120 +1,72 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Task, ScratchpadItem } from '@shared/schema';
-import { localStorage as localStorageService } from '@/lib/storage';
+import { useTasks } from '@/hooks/useTasks';
+import { useScratchpad } from '@/hooks/useScratchpad';
 import { TasksTab } from '@/components/TasksTab';
 import { ScratchpadTab } from '@/components/ScratchpadTab';
 import { CalendarTab } from '@/components/CalendarTab';
 import { AuthButton } from '@/components/AuthButton';
 import { EmptyState } from '@/components/EmptyState';
-import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CheckCircle2, FileText, Calendar, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export default function Home() {
-  const { user, loading, signInWithGoogle } = useAuth();
+  const { user, loading: authLoading, signInWithGoogle } = useAuth();
   const { toast } = useToast();
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [scratchpad, setScratchpad] = useState<ScratchpadItem[]>([]);
+  const { tasks, loading: tasksLoading, addTask, toggleComplete, deleteTask } = useTasks();
+  const { items: scratchpadItems, loading: scratchpadLoading, addItem, deleteItem } = useScratchpad();
   const [activeTab, setActiveTab] = useState('tasks');
 
-  useEffect(() => {
-    if (!loading && !user) {
-      const localTasks = localStorageService.getTasks();
-      setTasks(localTasks);
-    }
-  }, [loading, user]);
-
-  const addTask = (title: string, bucket: 'work' | 'personal', date: string) => {
-    const newTask: Task = {
-      id: crypto.randomUUID(),
-      userId: user?.id || 'local',
-      title,
-      bucket,
-      date,
-      completed: false,
-      createdAt: new Date(),
-    };
-
-    const updatedTasks = [...tasks, newTask];
-    setTasks(updatedTasks);
-
-    if (!user) {
-      localStorageService.saveTasks(updatedTasks);
-    }
-
+  const handleAddTask = async (title: string, bucket: 'work' | 'personal', date: string) => {
+    await addTask(title, bucket, date);
     toast({
       title: 'Task added',
       description: `Added to ${bucket} tasks`,
     });
   };
 
-  const toggleTaskComplete = (taskId: string) => {
-    const updatedTasks = tasks.map(task =>
-      task.id === taskId ? { ...task, completed: !task.completed } : task
-    );
-    setTasks(updatedTasks);
-
-    if (!user) {
-      localStorageService.saveTasks(updatedTasks);
-    }
+  const handleToggleComplete = async (taskId: string) => {
+    await toggleComplete(taskId);
   };
 
-  const deleteTask = (taskId: string) => {
-    const updatedTasks = tasks.filter(task => task.id !== taskId);
-    setTasks(updatedTasks);
-
-    if (!user) {
-      localStorageService.saveTasks(updatedTasks);
-    }
-
+  const handleDeleteTask = async (taskId: string) => {
+    await deleteTask(taskId);
     toast({
       title: 'Task deleted',
       variant: 'destructive',
     });
   };
 
-  const addScratchpadItem = (title: string) => {
-    const newItem: ScratchpadItem = {
-      id: crypto.randomUUID(),
-      userId: user?.id || 'local',
-      title,
-      createdAt: new Date(),
-    };
-
-    const updatedScratchpad = [...scratchpad, newItem];
-    setScratchpad(updatedScratchpad);
-
+  const handleAddScratchpad = async (title: string) => {
+    await addItem(title);
     toast({
       title: 'Idea captured',
     });
   };
 
-  const deleteScratchpadItem = (itemId: string) => {
-    const updatedScratchpad = scratchpad.filter(item => item.id !== itemId);
-    setScratchpad(updatedScratchpad);
-
+  const handleDeleteScratchpad = async (itemId: string) => {
+    await deleteItem(itemId);
     toast({
       title: 'Item deleted',
       variant: 'destructive',
     });
   };
 
-  const sendScratchpadToTasks = (itemId: string, bucket: 'work' | 'personal', date: string) => {
-    const item = scratchpad.find(i => i.id === itemId);
+  const handleSendToTasks = async (itemId: string, bucket: 'work' | 'personal', date: string) => {
+    const item = scratchpadItems.find(i => i.id === itemId);
     if (!item) return;
 
-    addTask(item.title, bucket, date);
-    deleteScratchpadItem(itemId);
-
+    await addTask(item.title, bucket, date);
+    await deleteItem(itemId);
+    
     toast({
       title: 'Sent to tasks',
       description: `Added to ${bucket} tasks`,
     });
   };
 
-  if (loading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-pulse text-muted-foreground">Loading...</div>
@@ -172,12 +124,18 @@ export default function Home() {
           </div>
 
           <TabsContent value="tasks" className="mt-0">
-            <TasksTab
-              tasks={tasks}
-              onAddTask={addTask}
-              onToggleComplete={toggleTaskComplete}
-              onDeleteTask={deleteTask}
-            />
+            {tasksLoading ? (
+              <div className="flex items-center justify-center py-16">
+                <div className="animate-pulse text-muted-foreground">Loading tasks...</div>
+              </div>
+            ) : (
+              <TasksTab
+                tasks={tasks}
+                onAddTask={handleAddTask}
+                onToggleComplete={handleToggleComplete}
+                onDeleteTask={handleDeleteTask}
+              />
+            )}
           </TabsContent>
 
           <TabsContent value="scratchpad" className="mt-0">
@@ -189,13 +147,17 @@ export default function Home() {
                 actionLabel="Sign in with Google"
                 onAction={signInWithGoogle}
               />
+            ) : scratchpadLoading ? (
+              <div className="flex items-center justify-center py-16">
+                <div className="animate-pulse text-muted-foreground">Loading scratchpad...</div>
+              </div>
             ) : (
               <ScratchpadTab
-                items={scratchpad}
+                items={scratchpadItems}
                 tasks={tasks}
-                onAddItem={addScratchpadItem}
-                onDeleteItem={deleteScratchpadItem}
-                onSendToTasks={sendScratchpadToTasks}
+                onAddItem={handleAddScratchpad}
+                onDeleteItem={handleDeleteScratchpad}
+                onSendToTasks={handleSendToTasks}
               />
             )}
           </TabsContent>
@@ -209,11 +171,15 @@ export default function Home() {
                 actionLabel="Sign in with Google"
                 onAction={signInWithGoogle}
               />
+            ) : tasksLoading ? (
+              <div className="flex items-center justify-center py-16">
+                <div className="animate-pulse text-muted-foreground">Loading calendar...</div>
+              </div>
             ) : (
               <CalendarTab
                 tasks={tasks}
-                onToggleComplete={toggleTaskComplete}
-                onDeleteTask={deleteTask}
+                onToggleComplete={handleToggleComplete}
+                onDeleteTask={handleDeleteTask}
               />
             )}
           </TabsContent>

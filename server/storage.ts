@@ -1,38 +1,63 @@
-import { type User, type InsertUser } from "@shared/schema";
-import { randomUUID } from "crypto";
-
-// modify the interface with any CRUD methods
-// you might need
+import { db } from './db';
+import { tasks, scratchpad, type Task, type InsertTask, type ScratchpadItem, type InsertScratchpad } from '@shared/schema';
+import { eq, and } from 'drizzle-orm';
 
 export interface IStorage {
-  getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  // Tasks
+  getTasks(userId: string): Promise<Task[]>;
+  createTask(task: InsertTask): Promise<Task>;
+  updateTask(id: string, userId: string, updates: Partial<Task>): Promise<Task | undefined>;
+  deleteTask(id: string, userId: string): Promise<boolean>;
+
+  // Scratchpad
+  getScratchpad(userId: string): Promise<ScratchpadItem[]>;
+  createScratchpadItem(item: InsertScratchpad): Promise<ScratchpadItem>;
+  deleteScratchpadItem(id: string, userId: string): Promise<boolean>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-
-  constructor() {
-    this.users = new Map();
+export class DbStorage implements IStorage {
+  async getTasks(userId: string): Promise<Task[]> {
+    return await db.select().from(tasks).where(eq(tasks.userId, userId));
   }
 
-  async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+  async createTask(task: InsertTask): Promise<Task> {
+    const [newTask] = await db.insert(tasks).values(task).returning();
+    return newTask;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+  async updateTask(id: string, userId: string, updates: Partial<Task>): Promise<Task | undefined> {
+    const [updated] = await db
+      .update(tasks)
+      .set(updates)
+      .where(and(eq(tasks.id, id), eq(tasks.userId, userId)))
+      .returning();
+    return updated;
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
+  async deleteTask(id: string, userId: string): Promise<boolean> {
+    const result = await db
+      .delete(tasks)
+      .where(and(eq(tasks.id, id), eq(tasks.userId, userId)))
+      .returning();
+    return result.length > 0;
+  }
+
+  async getScratchpad(userId: string): Promise<ScratchpadItem[]> {
+    return await db.select().from(scratchpad).where(eq(scratchpad.userId, userId));
+  }
+
+  async createScratchpadItem(item: InsertScratchpad): Promise<ScratchpadItem> {
+    const [newItem] = await db.insert(scratchpad).values(item).returning();
+    return newItem;
+  }
+
+  async deleteScratchpadItem(id: string, userId: string): Promise<boolean> {
+    const result = await db
+      .delete(scratchpad)
+      .where(and(eq(scratchpad.id, id), eq(scratchpad.userId, userId)))
+      .returning();
+    return result.length > 0;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DbStorage();
