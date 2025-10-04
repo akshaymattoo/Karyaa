@@ -116,14 +116,14 @@ export function TasksTab({ tasks, onAddTask, onToggleComplete, onDeleteTask }: T
 
   return (
     <div className="max-w-6xl mx-auto px-4 md:px-6 py-8">
-      {taskCount >= 7 && (
-        <div className={cn(
-          'mb-6 p-4 rounded-md border text-sm font-medium',
-          taskCount === 8 ? 'bg-destructive/10 border-destructive text-destructive' : 'bg-chart-3/10 border-chart-3 text-chart-3'
-        )} data-testid="banner-task-limit">
-          {taskCount === 8 ? 'Task limit reached. Complete or delete a task to add more.' : `${8 - taskCount} slot${8 - taskCount === 1 ? '' : 's'} remaining`}
-        </div>
-      )}
+      <div className={cn(
+        'mb-6 p-4 rounded-md border text-sm font-medium',
+        taskCount === 8 ? 'bg-destructive/10 border-destructive text-destructive' : 
+        taskCount >= 7 ? 'bg-chart-3/10 border-chart-3 text-chart-3' : 
+        'bg-muted border-border text-muted-foreground'
+      )} data-testid="banner-task-limit">
+        {taskCount === 8 ? 'Task limit reached. Complete or delete a task to add more.' : `${8 - taskCount} slot${8 - taskCount === 1 ? '' : 's'} remaining`}
+      </div>
 
       <form onSubmit={handleSubmit} className="mb-8 space-y-4">
         <div className="flex flex-col md:flex-row gap-4">
