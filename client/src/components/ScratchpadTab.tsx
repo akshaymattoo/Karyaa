@@ -44,17 +44,17 @@ export function ScratchpadTab({ items, tasks, onAddItem, onDeleteItem, onSendToT
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [error, setError] = useState('');
 
-  // Calculate remaining slots for the selected date
-  const getActiveTasksForDate = (date: Date) => {
+  // Calculate remaining slots for the selected date (count ALL tasks, not just active)
+  const getTasksForDate = (date: Date) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     const dateString = `${year}-${month}-${day}`;
-    return tasks.filter(t => !t.completed && t.date === dateString);
+    return tasks.filter(t => t.date === dateString);
   };
 
-  const activeTasksForSelectedDate = getActiveTasksForDate(selectedDate);
-  const remainingSlots = 8 - activeTasksForSelectedDate.length;
+  const tasksForSelectedDate = getTasksForDate(selectedDate);
+  const remainingSlots = 8 - tasksForSelectedDate.length;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,7 +73,7 @@ export function ScratchpadTab({ items, tasks, onAddItem, onDeleteItem, onSendToT
     if (!sendToTasksItem) return;
 
     if (remainingSlots === 0) {
-      setError(`Task limit reached for ${format(selectedDate, 'MMM d')}. Complete or delete a task first.`);
+      setError(`Task limit reached for ${format(selectedDate, 'MMM d')}. Delete a task first.`);
       return;
     }
 

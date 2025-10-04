@@ -45,13 +45,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: 'Unauthorized' });
       }
 
-      // Check 8-task limit per day (only count non-completed tasks for the target date)
+      // Check 8-task limit per day (count ALL tasks for the target date)
       const targetDate = req.body.date;
       const existingTasks = await storage.getTasks(userId);
-      const activeTasksForDate = existingTasks.filter(t => !t.completed && t.date === targetDate);
+      const tasksForDate = existingTasks.filter(t => t.date === targetDate);
       
-      if (activeTasksForDate.length >= 8) {
-        return res.status(400).json({ error: 'Task limit reached for this day. Complete or delete a task to add more.' });
+      if (tasksForDate.length >= 8) {
+        return res.status(400).json({ error: 'Task limit reached for this day. Delete a task to add more.' });
       }
 
       const validatedData = insertTaskSchema.parse({ ...req.body, userId });
@@ -190,19 +190,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const tasksToMigrate: typeof tasksToCreate = [];
       let skippedCount = 0;
       
-      // For each date, enforce the 8-task limit
+      // For each date, enforce the 8-task limit (count ALL tasks, not just active)
       for (const [date, dateTasks] of Array.from(tasksByDate.entries())) {
-        const existingActiveForDate = existingTasks.filter((t: Task) => !t.completed && t.date === date);
-        const slotsAvailable = Math.max(0, 8 - existingActiveForDate.length);
+        const existingTasksForDate = existingTasks.filter((t: Task) => t.date === date);
+        const slotsAvailable = Math.max(0, 8 - existingTasksForDate.length);
         
-        const activeTasksForDate = dateTasks.filter((t: any) => !t.completed);
+        // Migrate up to available slots, prioritize completed tasks first
         const completedTasksForDate = dateTasks.filter((t: any) => t.completed);
+        const activeTasksForDate = dateTasks.filter((t: any) => !t.completed);
         
-        // Always migrate completed tasks, but limit active tasks per day
-        tasksToMigrate.push(...completedTasksForDate);
-        tasksToMigrate.push(...activeTasksForDate.slice(0, slotsAvailable));
+        // Take completed tasks first, then active tasks to fill remaining slots
+        const tasksInPriorityOrder = [...completedTasksForDate, ...activeTasksForDate];
+        const tasksToMigrateForDate = tasksInPriorityOrder.slice(0, slotsAvailable);
         
-        skippedCount += Math.max(0, activeTasksForDate.length - slotsAvailable);
+        tasksToMigrate.push(...tasksToMigrateForDate);
+        skippedCount += Math.max(0, dateTasks.length - slotsAvailable);
       }
       
       const createdTasks = await Promise.all(
