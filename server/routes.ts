@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertTaskSchema, insertScratchpadSchema } from "@shared/schema";
+import { insertTaskSchema, insertScratchpadSchema, type Task } from "@shared/schema";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
