@@ -29,9 +29,17 @@ interface TasksTabProps {
 export function TasksTab({ tasks, onAddTask, onToggleComplete, onDeleteTask }: TasksTabProps) {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [selectedBucket, setSelectedBucket] = useState<'work' | 'personal'>('work');
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date>(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today;
+  });
   const [filterBucket, setFilterBucket] = useState<'all' | 'work' | 'personal'>('all');
-  const [viewDate, setViewDate] = useState<Date>(new Date());
+  const [viewDate, setViewDate] = useState<Date>(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today;
+  });
   const [error, setError] = useState('');
   const [calendarOpen, setCalendarOpen] = useState(false);
 
@@ -81,12 +89,14 @@ export function TasksTab({ tasks, onAddTask, onToggleComplete, onDeleteTask }: T
   const goToPreviousDay = () => {
     const newDate = new Date(viewDate);
     newDate.setDate(newDate.getDate() - 1);
+    newDate.setHours(0, 0, 0, 0);
     setViewDate(newDate);
   };
 
   const goToNextDay = () => {
     const newDate = new Date(viewDate);
     newDate.setDate(newDate.getDate() + 1);
+    newDate.setHours(0, 0, 0, 0);
     setViewDate(newDate);
   };
 
