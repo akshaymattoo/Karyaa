@@ -43,8 +43,17 @@ export function TasksTab({ tasks, onAddTask, onToggleComplete, onDeleteTask }: T
   const [error, setError] = useState('');
   const [calendarOpen, setCalendarOpen] = useState(false);
 
-  const activeTasks = tasks.filter(t => !t.completed);
-  const taskCount = activeTasks.length;
+  // Get active tasks for the currently selected date (for adding tasks)
+  const getActiveTasksForDate = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateString = `${year}-${month}-${day}`;
+    return tasks.filter(t => !t.completed && t.date === dateString);
+  };
+
+  const activeTasksForSelectedDate = getActiveTasksForDate(selectedDate);
+  const taskCount = activeTasksForSelectedDate.length;
   const canAddTask = taskCount < 8;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -56,7 +65,7 @@ export function TasksTab({ tasks, onAddTask, onToggleComplete, onDeleteTask }: T
     }
 
     if (!canAddTask) {
-      setError('Task limit reached. Complete or delete a task to add more.');
+      setError('Task limit reached for this day. Complete or delete a task to add more.');
       return;
     }
 
@@ -122,7 +131,7 @@ export function TasksTab({ tasks, onAddTask, onToggleComplete, onDeleteTask }: T
         taskCount >= 7 ? 'bg-chart-3/10 border-chart-3 text-chart-3' : 
         'bg-muted border-border text-muted-foreground'
       )} data-testid="banner-task-limit">
-        {taskCount === 8 ? 'Task limit reached. Complete or delete a task to add more.' : `${8 - taskCount} slot${8 - taskCount === 1 ? '' : 's'} remaining`}
+        {taskCount === 8 ? 'Task limit reached for this day. Complete or delete a task to add more.' : `${8 - taskCount} slot${8 - taskCount === 1 ? '' : 's'} remaining for ${format(selectedDate, 'MMM d')}`}
       </div>
 
       <form onSubmit={handleSubmit} className="mb-8 space-y-4">
