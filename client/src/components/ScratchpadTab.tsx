@@ -64,7 +64,13 @@ export function ScratchpadTab({ items, tasks, onAddItem, onDeleteItem, onSendToT
       return;
     }
 
-    onSendToTasks(sendToTasksItem.id, selectedBucket, selectedDate.toISOString().split('T')[0]);
+    // Format date as YYYY-MM-DD in local timezone
+    const year = selectedDate.getFullYear();
+    const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+    const day = String(selectedDate.getDate()).padStart(2, '0');
+    const localDateString = `${year}-${month}-${day}`;
+
+    onSendToTasks(sendToTasksItem.id, selectedBucket, localDateString);
     setSendToTasksItem(null);
     setError('');
   };

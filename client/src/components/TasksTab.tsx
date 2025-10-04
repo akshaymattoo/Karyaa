@@ -16,7 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, ChevronLeft, ChevronRight, CalendarIcon, Plus } from 'lucide-react';
-import { format, isToday, parseISO, startOfDay } from 'date-fns';
+import { format, isToday } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 interface TasksTabProps {
@@ -52,15 +52,25 @@ export function TasksTab({ tasks, onAddTask, onToggleComplete, onDeleteTask }: T
       return;
     }
 
-    onAddTask(newTaskTitle.trim(), selectedBucket, selectedDate.toISOString().split('T')[0]);
+    // Format date as YYYY-MM-DD in local timezone
+    const year = selectedDate.getFullYear();
+    const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+    const day = String(selectedDate.getDate()).padStart(2, '0');
+    const localDateString = `${year}-${month}-${day}`;
+
+    onAddTask(newTaskTitle.trim(), selectedBucket, localDateString);
     setNewTaskTitle('');
     setError('');
   };
 
   const filteredTasks = tasks.filter(task => {
-    const taskDate = startOfDay(parseISO(task.date));
-    const viewDateStart = startOfDay(viewDate);
-    const matchesDate = taskDate.getTime() === viewDateStart.getTime();
+    // Format viewDate as YYYY-MM-DD in local timezone
+    const year = viewDate.getFullYear();
+    const month = String(viewDate.getMonth() + 1).padStart(2, '0');
+    const day = String(viewDate.getDate()).padStart(2, '0');
+    const viewDateString = `${year}-${month}-${day}`;
+    
+    const matchesDate = task.date === viewDateString;
     const matchesBucket = filterBucket === 'all' || task.bucket === filterBucket;
     return matchesDate && matchesBucket;
   });

@@ -14,8 +14,6 @@ import {
   isToday,
   addMonths,
   subMonths,
-  parseISO,
-  startOfDay,
 } from 'date-fns';
 import { cn } from '@/lib/utils';
 import {
@@ -44,11 +42,13 @@ export function CalendarTab({ tasks, onToggleComplete, onDeleteTask }: CalendarT
   const daysToShow = [...Array(firstDayOfWeek).fill(null), ...daysInMonth];
 
   const getTasksForDay = (day: Date) => {
-    return tasks.filter(task => {
-      const taskDate = startOfDay(parseISO(task.date));
-      const dayStart = startOfDay(day);
-      return taskDate.getTime() === dayStart.getTime();
-    });
+    // Format day as YYYY-MM-DD in local timezone
+    const year = day.getFullYear();
+    const month = String(day.getMonth() + 1).padStart(2, '0');
+    const dayNum = String(day.getDate()).padStart(2, '0');
+    const dayString = `${year}-${month}-${dayNum}`;
+    
+    return tasks.filter(task => task.date === dayString);
   };
 
   const selectedDayTasks = selectedDay ? getTasksForDay(selectedDay) : [];
