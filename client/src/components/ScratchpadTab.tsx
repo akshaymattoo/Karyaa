@@ -36,12 +36,25 @@ export function ScratchpadTab({ items, tasks, onAddItem, onDeleteItem, onSendToT
   const [newItemTitle, setNewItemTitle] = useState('');
   const [sendToTasksItem, setSendToTasksItem] = useState<ScratchpadItem | null>(null);
   const [selectedBucket, setSelectedBucket] = useState<'work' | 'personal'>('work');
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date>(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today;
+  });
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [error, setError] = useState('');
 
-  const activeTasks = tasks.filter(t => !t.completed);
-  const remainingSlots = 8 - activeTasks.length;
+  // Calculate remaining slots for the selected date
+  const getActiveTasksForDate = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateString = `${year}-${month}-${day}`;
+    return tasks.filter(t => !t.completed && t.date === dateString);
+  };
+
+  const activeTasksForSelectedDate = getActiveTasksForDate(selectedDate);
+  const remainingSlots = 8 - activeTasksForSelectedDate.length;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,7 +73,7 @@ export function ScratchpadTab({ items, tasks, onAddItem, onDeleteItem, onSendToT
     if (!sendToTasksItem) return;
 
     if (remainingSlots === 0) {
-      setError('Task limit reached. Complete or delete a task first.');
+      setError(`Task limit reached for ${format(selectedDate, 'MMM d')}. Complete or delete a task first.`);
       return;
     }
 
@@ -116,7 +129,9 @@ export function ScratchpadTab({ items, tasks, onAddItem, onDeleteItem, onSendToT
               item={item}
               onSendToTasks={(item) => {
                 setSendToTasksItem(item);
-                setSelectedDate(new Date());
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                setSelectedDate(today);
                 setSelectedBucket('work');
               }}
               onDelete={onDeleteItem}
@@ -130,7 +145,7 @@ export function ScratchpadTab({ items, tasks, onAddItem, onDeleteItem, onSendToT
           <DialogHeader>
             <DialogTitle>Send to Tasks</DialogTitle>
             <DialogDescription>
-              Schedule this item as a task. {remainingSlots} task slot{remainingSlots !== 1 ? 's' : ''} remaining.
+              Schedule this item as a task. {remainingSlots} task slot{remainingSlots !== 1 ? 's' : ''} remaining for {format(selectedDate, 'MMM d')}.
             </DialogDescription>
           </DialogHeader>
 
