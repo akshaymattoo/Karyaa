@@ -16,7 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, ChevronLeft, ChevronRight, CalendarIcon, Plus } from 'lucide-react';
-import { format, isToday } from 'date-fns';
+import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 interface TasksTabProps {
@@ -91,7 +91,17 @@ export function TasksTab({ tasks, onAddTask, onToggleComplete, onDeleteTask }: T
   };
 
   const goToToday = () => {
-    setViewDate(new Date());
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    setViewDate(today);
+  };
+
+  // Check if viewDate is today by comparing date strings
+  const isViewingToday = () => {
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const viewStr = `${viewDate.getFullYear()}-${String(viewDate.getMonth() + 1).padStart(2, '0')}-${String(viewDate.getDate()).padStart(2, '0')}`;
+    return todayStr === viewStr;
   };
 
   return (
@@ -178,12 +188,12 @@ export function TasksTab({ tasks, onAddTask, onToggleComplete, onDeleteTask }: T
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <Button
-            variant={isToday(viewDate) ? 'default' : 'outline'}
+            variant={isViewingToday() ? 'default' : 'outline'}
             onClick={goToToday}
             className="min-w-24"
             data-testid="button-today"
           >
-            {isToday(viewDate) ? 'Today' : format(viewDate, 'MMM d')}
+            {isViewingToday() ? 'Today' : format(viewDate, 'MMM d')}
           </Button>
           <Button
             variant="outline"
