@@ -38,7 +38,10 @@ export function TaskCard({ task, onToggleComplete, onDelete }: TaskCardProps) {
             {task.bucket === 'work' ? 'Work' : 'Personal'}
           </Badge>
           <span className="text-xs font-mono text-muted-foreground" data-testid="text-task-date">
-            {format(new Date(task.date), 'MMM d, yyyy')}
+            {(() => {
+              const [year, month, day] = task.date.split('-').map(Number);
+              return format(new Date(year, month - 1, day), 'MMM d, yyyy');
+            })()}
           </span>
         </div>
       </div>
