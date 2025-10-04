@@ -1,0 +1,224 @@
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { Task, ScratchpadItem } from '@shared/schema';
+import { localStorage as localStorageService } from '@/lib/storage';
+import { TasksTab } from '@/components/TasksTab';
+import { ScratchpadTab } from '@/components/ScratchpadTab';
+import { CalendarTab } from '@/components/CalendarTab';
+import { AuthButton } from '@/components/AuthButton';
+import { EmptyState } from '@/components/EmptyState';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CheckCircle2, FileText, Calendar, Lock } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+
+export default function Home() {
+  const { user, loading, signInWithGoogle } = useAuth();
+  const { toast } = useToast();
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [scratchpad, setScratchpad] = useState<ScratchpadItem[]>([]);
+  const [activeTab, setActiveTab] = useState('tasks');
+
+  useEffect(() => {
+    if (!loading && !user) {
+      const localTasks = localStorageService.getTasks();
+      setTasks(localTasks);
+    }
+  }, [loading, user]);
+
+  const addTask = (title: string, bucket: 'work' | 'personal', date: string) => {
+    const newTask: Task = {
+      id: crypto.randomUUID(),
+      userId: user?.id || 'local',
+      title,
+      bucket,
+      date,
+      completed: false,
+      createdAt: new Date(),
+    };
+
+    const updatedTasks = [...tasks, newTask];
+    setTasks(updatedTasks);
+
+    if (!user) {
+      localStorageService.saveTasks(updatedTasks);
+    }
+
+    toast({
+      title: 'Task added',
+      description: `Added to ${bucket} tasks`,
+    });
+  };
+
+  const toggleTaskComplete = (taskId: string) => {
+    const updatedTasks = tasks.map(task =>
+      task.id === taskId ? { ...task, completed: !task.completed } : task
+    );
+    setTasks(updatedTasks);
+
+    if (!user) {
+      localStorageService.saveTasks(updatedTasks);
+    }
+  };
+
+  const deleteTask = (taskId: string) => {
+    const updatedTasks = tasks.filter(task => task.id !== taskId);
+    setTasks(updatedTasks);
+
+    if (!user) {
+      localStorageService.saveTasks(updatedTasks);
+    }
+
+    toast({
+      title: 'Task deleted',
+      variant: 'destructive',
+    });
+  };
+
+  const addScratchpadItem = (title: string) => {
+    const newItem: ScratchpadItem = {
+      id: crypto.randomUUID(),
+      userId: user?.id || 'local',
+      title,
+      createdAt: new Date(),
+    };
+
+    const updatedScratchpad = [...scratchpad, newItem];
+    setScratchpad(updatedScratchpad);
+
+    toast({
+      title: 'Idea captured',
+    });
+  };
+
+  const deleteScratchpadItem = (itemId: string) => {
+    const updatedScratchpad = scratchpad.filter(item => item.id !== itemId);
+    setScratchpad(updatedScratchpad);
+
+    toast({
+      title: 'Item deleted',
+      variant: 'destructive',
+    });
+  };
+
+  const sendScratchpadToTasks = (itemId: string, bucket: 'work' | 'personal', date: string) => {
+    const item = scratchpad.find(i => i.id === itemId);
+    if (!item) return;
+
+    addTask(item.title, bucket, date);
+    deleteScratchpadItem(itemId);
+
+    toast({
+      title: 'Sent to tasks',
+      description: `Added to ${bucket} tasks`,
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-pulse text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <header className="border-b sticky top-0 bg-background/95 backdrop-blur z-50">
+        <div className="max-w-6xl mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold">TaskFlow</h1>
+            <p className="text-sm text-muted-foreground">Organize your work & life</p>
+          </div>
+          <AuthButton />
+        </div>
+      </header>
+
+      <main>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <div className="border-b">
+            <div className="max-w-6xl mx-auto px-4 md:px-6">
+              <TabsList className="h-12 bg-transparent border-0 gap-8">
+                <TabsTrigger
+                  value="tasks"
+                  className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent"
+                  data-testid="tab-tasks"
+                >
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  Tasks
+                </TabsTrigger>
+                <TabsTrigger
+                  value="scratchpad"
+                  className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent"
+                  disabled={!user}
+                  data-testid="tab-scratchpad"
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  Scratchpad
+                  {!user && <Lock className="h-3 w-3 ml-2" />}
+                </TabsTrigger>
+                <TabsTrigger
+                  value="calendar"
+                  className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent"
+                  disabled={!user}
+                  data-testid="tab-calendar"
+                >
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Calendar
+                  {!user && <Lock className="h-3 w-3 ml-2" />}
+                </TabsTrigger>
+              </TabsList>
+            </div>
+          </div>
+
+          <TabsContent value="tasks" className="mt-0">
+            <TasksTab
+              tasks={tasks}
+              onAddTask={addTask}
+              onToggleComplete={toggleTaskComplete}
+              onDeleteTask={deleteTask}
+            />
+          </TabsContent>
+
+          <TabsContent value="scratchpad" className="mt-0">
+            {!user ? (
+              <EmptyState
+                icon={Lock}
+                title="Sign in to unlock Scratchpad"
+                description="Capture unlimited ideas and notes. Available with a free Google account."
+                actionLabel="Sign in with Google"
+                onAction={signInWithGoogle}
+              />
+            ) : (
+              <ScratchpadTab
+                items={scratchpad}
+                tasks={tasks}
+                onAddItem={addScratchpadItem}
+                onDeleteItem={deleteScratchpadItem}
+                onSendToTasks={sendScratchpadToTasks}
+              />
+            )}
+          </TabsContent>
+
+          <TabsContent value="calendar" className="mt-0">
+            {!user ? (
+              <EmptyState
+                icon={Lock}
+                title="Sign in to view your calendar"
+                description="Visualize your tasks across the month. Available with a free Google account."
+                actionLabel="Sign in with Google"
+                onAction={signInWithGoogle}
+              />
+            ) : (
+              <CalendarTab
+                tasks={tasks}
+                onToggleComplete={toggleTaskComplete}
+                onDeleteTask={deleteTask}
+              />
+            )}
+          </TabsContent>
+        </Tabs>
+      </main>
+    </div>
+  );
+}
