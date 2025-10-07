@@ -1,15 +1,15 @@
-import { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useTasks } from '@/hooks/useTasks';
-import { useScratchpad } from '@/hooks/useScratchpad';
-import { TasksTab } from '@/components/TasksTab';
-import { ScratchpadTab } from '@/components/ScratchpadTab';
-import { CalendarTab } from '@/components/CalendarTab';
 import { AuthButton } from '@/components/AuthButton';
+import { CalendarTab } from '@/components/CalendarTab';
 import { EmptyState } from '@/components/EmptyState';
+import { ScratchpadTab } from '@/components/ScratchpadTab';
+import { TasksTab } from '@/components/TasksTab';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CheckCircle2, FileText, Calendar, Lock } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useScratchpad } from '@/hooks/useScratchpad';
+import { useTasks } from '@/hooks/useTasks';
+import { Calendar, CheckCircle2, FileText, Lock } from 'lucide-react';
+import { useState } from 'react';
 
 export default function Home() {
   const { user, loading: authLoading, signInWithGoogle } = useAuth();
@@ -79,7 +79,7 @@ export default function Home() {
       <header className="border-b sticky top-0 bg-background/95 backdrop-blur z-50">
         <div className="max-w-6xl mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold">TaskFlow</h1>
+            <h1 className="text-2xl font-semibold">Karyaa</h1>
             <p className="text-sm text-muted-foreground">Organize your work & life</p>
           </div>
           <AuthButton />

@@ -1,6 +1,6 @@
+import { scratchpad, tasks, type InsertScratchpad, type InsertTask, type ScratchpadItem, type Task } from '@shared/schema';
+import { and, eq } from 'drizzle-orm';
 import { db } from './db';
-import { tasks, scratchpad, type Task, type InsertTask, type ScratchpadItem, type InsertScratchpad } from '@shared/schema';
-import { eq, and } from 'drizzle-orm';
 
 export interface IStorage {
   // Tasks
@@ -17,6 +17,7 @@ export interface IStorage {
 
 export class DbStorage implements IStorage {
   async getTasks(userId: string): Promise<Task[]> {
+    console.log("Now fething the tasks for userId",userId);
     return await db.select().from(tasks).where(eq(tasks.userId, userId));
   }
 
@@ -43,6 +44,7 @@ export class DbStorage implements IStorage {
   }
 
   async getScratchpad(userId: string): Promise<ScratchpadItem[]> {
+    console.log("Now fething the scratchpad for userId",userId);
     return await db.select().from(scratchpad).where(eq(scratchpad.userId, userId));
   }
 

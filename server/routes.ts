@@ -1,8 +1,8 @@
+import { insertScratchpadSchema, insertTaskSchema, type Task } from "@shared/schema";
+import { createClient } from "@supabase/supabase-js";
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertTaskSchema, insertScratchpadSchema, type Task } from "@shared/schema";
-import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL || '',
@@ -32,8 +32,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const tasks = await storage.getTasks(userId);
       res.json(tasks);
     } catch (error) {
-      console.error('Error fetching tasks:', error);
-      res.status(500).json({ error: 'Failed to fetch tasks' });
+      console.error('Error fetching tasks:', JSON.stringify(error));
+      res.status(500).json({ error: 'Failed to fetch tasks',msg:error });
     }
   });
 
@@ -118,8 +118,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const items = await storage.getScratchpad(userId);
       res.json(items);
     } catch (error) {
-      console.error('Error fetching scratchpad:', error);
-      res.status(500).json({ error: 'Failed to fetch scratchpad' });
+      console.error('Error fetching scratchpad:', JSON.stringify(error));
+      res.status(500).json({ error: 'Failed to fetch scratchpad',msg:error });
     }
   });
 

@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Task, InsertTask } from '@shared/schema';
+import { useToast } from '@/hooks/use-toast';
 import { localStorage as localStorageService } from '@/lib/storage';
 import { supabase } from '@/lib/supabase';
-import { useToast } from '@/hooks/use-toast';
+import { InsertTask, Task } from '@shared/schema';
+import { useEffect, useState } from 'react';
 
 export function useTasks() {
   const { user } = useAuth();
@@ -125,6 +125,7 @@ export function useTasks() {
     };
 
     if (user) {
+      console.log("inside user true --")
       try {
         const session = await supabase.auth.getSession();
         const token = session.data.session?.access_token;

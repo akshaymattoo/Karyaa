@@ -1,10 +1,5 @@
-import { useState } from 'react';
-import { ScratchpadItem, Task } from '@shared/schema';
-import { ScratchpadCard } from './ScratchpadCard';
-import { EmptyState } from './EmptyState';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Calendar } from '@/components/ui/calendar';
 import {
   Dialog,
   DialogContent,
@@ -12,6 +7,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -19,10 +17,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { FileText, CalendarIcon, Plus } from 'lucide-react';
+import { ScratchpadItem, Task } from '@shared/schema';
 import { format } from 'date-fns';
+import { CalendarIcon, FileText, Plus } from 'lucide-react';
+import { useState } from 'react';
+import { EmptyState } from './EmptyState';
+import { ScratchpadCard } from './ScratchpadCard';
 
 interface ScratchpadTabProps {
   items: ScratchpadItem[];
@@ -63,7 +63,7 @@ export function ScratchpadTab({ items, tasks, onAddItem, onDeleteItem, onSendToT
       setError('Idea title required');
       return;
     }
-
+    console.log('scratch pad ----',newItemTitle)
     onAddItem(newItemTitle.trim());
     setNewItemTitle('');
     setError('');

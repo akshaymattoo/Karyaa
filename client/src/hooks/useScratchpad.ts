@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { ScratchpadItem, InsertScratchpad } from '@shared/schema';
 import { supabase } from '@/lib/supabase';
+import { InsertScratchpad, ScratchpadItem } from '@shared/schema';
+import { useEffect, useState } from 'react';
 
 export function useScratchpad() {
   const { user } = useAuth();
@@ -49,7 +49,7 @@ export function useScratchpad() {
 
   const addItem = async (title: string) => {
     if (!user) return;
-
+    
     const newItem: InsertScratchpad = {
       userId: user.id,
       title,
