@@ -1,7 +1,7 @@
 import { InsertFeedback } from '@shared/schema';
  
-export function useScratchpad() {
-  const addItem = async (title: string) => {
+export function useFeedback() {
+  const addFeedbackItem = async (title: string) => {
     const newItem: InsertFeedback = {
       title,
     };
@@ -25,6 +25,6 @@ export function useScratchpad() {
   };
 
   return {
-    addItem,
+    addFeedbackItem,
   };
 }
