@@ -53,6 +53,13 @@ export default function Home() {
     });
   };
 
+    const handleEditScratchpad = async (itemId: string) => {
+     
+    toast({
+      title: 'Item edited',
+    });
+  };
+
   const handleSendToTasks = async (itemId: string, bucket: 'work' | 'personal', date: string) => {
     const item = scratchpadItems.find(i => i.id === itemId);
     if (!item) return;
@@ -158,6 +165,7 @@ export default function Home() {
                 onAddItem={handleAddScratchpad}
                 onDeleteItem={handleDeleteScratchpad}
                 onSendToTasks={handleSendToTasks}
+                editItem = {handleEditScratchpad}
               />
             )}
           </TabsContent>

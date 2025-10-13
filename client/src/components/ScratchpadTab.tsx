@@ -29,10 +29,11 @@ interface ScratchpadTabProps {
   tasks: Task[];
   onAddItem: (title: string) => void;
   onDeleteItem: (itemId: string) => void;
+  editItem: (itemId: string) => void;
   onSendToTasks: (itemId: string, bucket: 'work' | 'personal', date: string) => void;
 }
 
-export function ScratchpadTab({ items, tasks, onAddItem, onDeleteItem, onSendToTasks }: ScratchpadTabProps) {
+export function ScratchpadTab({ items, tasks, onAddItem, onDeleteItem, onSendToTasks,editItem }: ScratchpadTabProps) {
   const [newItemTitle, setNewItemTitle] = useState('');
   const [sendToTasksItem, setSendToTasksItem] = useState<ScratchpadItem | null>(null);
   const [selectedBucket, setSelectedBucket] = useState<'work' | 'personal'>('work');
@@ -63,7 +64,6 @@ export function ScratchpadTab({ items, tasks, onAddItem, onDeleteItem, onSendToT
       setError('Idea title required');
       return;
     }
-    console.log('scratch pad ----',newItemTitle)
     onAddItem(newItemTitle.trim());
     setNewItemTitle('');
     setError('');
@@ -135,6 +135,7 @@ export function ScratchpadTab({ items, tasks, onAddItem, onDeleteItem, onSendToT
                 setSelectedBucket('work');
               }}
               onDelete={onDeleteItem}
+              editTask={editItem}
             />
           ))}
         </div>

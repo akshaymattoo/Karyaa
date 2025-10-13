@@ -53,6 +53,8 @@ export function useTasks() {
     loadTasks();
   }, [user]);
 
+
+  /*
   useEffect(() => {
     const migrateLocalData = async () => {
       if (!user || migrated) return;
@@ -114,6 +116,7 @@ export function useTasks() {
 
     migrateLocalData();
   }, [user, migrated, toast]);
+*/
 
   const addTask = async (title: string, bucket: 'work' | 'personal', date: string) => {
     const newTask: InsertTask = {

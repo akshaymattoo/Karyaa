@@ -1,26 +1,27 @@
-// import { Pool, neonConfig } from '@neondatabase/serverless';
-// import * as schema from '@shared/schema';
-// import { drizzle } from 'drizzle-orm/neon-serverless';
-// import WebSocket from 'ws';
-
-// // Neon uses WebSockets under the hood; provide the Node WebSocket implementation.
-// neonConfig.webSocketConstructor = WebSocket;
-
-// const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-
-
-// export const db = drizzle(pool, { schema });
-
-
-import 'dotenv/config';
-
+import { config as loadEnv } from 'dotenv';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
+import { log } from './vite';
 
-const connectionString = process.env.DATABASE_URL || "";
+// Ensure local `.env` values override deployment defaults when developing.
+loadEnv({ override: true });
+log('-------SUPABASE_DATABASE_URL',process.env.SUPABASE_DB_URL);
+log('\n');
+log('-------DATABASE_URL',process.env.DATABASE_URL);
+log('\n');
+log('-------SUPABASE_DATABASE_URL',process.env.SUPABASE_DATABASE_URL);
+log('\n');
+const connectionString =
+  process.env.SUPABASE_DB_URL ??
+  process.env.SUPABASE_DATABASE_URL ??
+  process.env.DATABASE_URL;
+
+log("---connection string------",connectionString);
+if (!connectionString) {
+  throw new Error('DATABASE_URL (or SUPABASE_DB_URL) is not defined');
+}
 
 // Disable prefetch as it is not supported for "Transaction" pool mode
-export const client = postgres(connectionString, { prepare: false })
+export const client = postgres(connectionString, { prepare: false });
 export const db = drizzle(client);
-
 

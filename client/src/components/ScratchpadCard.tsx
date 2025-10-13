@@ -1,14 +1,15 @@
-import { ScratchpadItem } from '@shared/schema';
 import { Button } from '@/components/ui/button';
+import { ScratchpadItem } from '@shared/schema';
 import { ArrowRight, Trash2 } from 'lucide-react';
 
 interface ScratchpadCardProps {
   item: ScratchpadItem;
   onSendToTasks: (item: ScratchpadItem) => void;
   onDelete: (itemId: string) => void;
+  editTask: (itemId: string) => void;
 }
 
-export function ScratchpadCard({ item, onSendToTasks, onDelete }: ScratchpadCardProps) {
+export function ScratchpadCard({ item, onSendToTasks, onDelete,editTask }: ScratchpadCardProps) {
   return (
     <div
       className="group flex items-start justify-between gap-3 p-4 rounded-md border bg-card hover-elevate transition-all"
@@ -18,6 +19,16 @@ export function ScratchpadCard({ item, onSendToTasks, onDelete }: ScratchpadCard
         <div className="text-base">{item.title}</div>
       </div>
       <div className="flex items-center gap-2">
+        {/* <Button
+          onClick={() => editTask(item.id)}
+          variant="ghost"
+          size="sm"
+          className="gap-1"
+          data-testid={`button-edit-task-${item.id}`}
+        >
+          <PencilIcon className="h-4 w-4" />
+          Edit
+        </Button> */}
         <Button
           onClick={() => onSendToTasks(item)}
           variant="ghost"
