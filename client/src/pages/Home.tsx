@@ -53,12 +53,16 @@ export default function Home() {
     });
   };
 
-    const handleEditScratchpad = async (itemId: string) => {
+  const handleEditScratchpad = async (itemId: string) => {
      
     toast({
       title: 'Item edited',
     });
   };
+
+  const handleAddFeedback = async (itemId:string) => {
+
+  }
 
   const handleSendToTasks = async (itemId: string, bucket: 'work' | 'personal', date: string) => {
     const item = scratchpadItems.find(i => i.id === itemId);
