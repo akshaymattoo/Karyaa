@@ -1,15 +1,15 @@
-import { useState } from 'react';
 import { MessageCircleQuestionIcon } from 'lucide-react';
+import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -60,7 +60,8 @@ const FeedbackModal = ({ onAddItem }: FeedbackModalProps) => {
       <DialogTrigger asChild>
         <Button
           type="button"
-          className="fixed bottom-6 left-6 z-40 h-12 w-12 rounded-full bg-primary text-primary-foreground shadow-lg transition-transform hover:scale-105 hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:h-14 sm:w-14"
+          size="icon"
+          className="!fixed bottom-6 right-6 left-auto z-40 h-12 w-12 rounded-full bg-primary text-primary-foreground shadow-lg transition-transform hover:scale-105 hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 no-default-hover-elevate no-active-interaction-elevate sm:h-14 sm:w-14"
           variant="default"
         >
           <MessageCircleQuestionIcon className="h-6 w-6" />
