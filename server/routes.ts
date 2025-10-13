@@ -1,4 +1,4 @@
-import { insertScratchpadSchema, insertTaskSchema, type Task } from "@shared/schema";
+import { insertFeedbackSchema, insertScratchpadSchema, insertTaskSchema, type Task } from "@shared/schema";
 import { createClient } from "@supabase/supabase-js";
 import type { Express } from "express";
 import { createServer, type Server } from "http";
@@ -135,7 +135,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const item = await storage.createScratchpadItem(validatedData);
       res.json(item);
     } catch (error) {
-      console.error('Error creating scratchpad item:', error);
       res.status(400).json({ error: 'Failed to create scratchpad item' });
     }
   });
@@ -224,6 +223,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error batch creating tasks:', error);
       res.status(400).json({ error: 'Failed to batch create tasks' });
+    }
+  });
+
+  //add feedback
+  app.post('/api/feedback' , async (req,res) => {
+    try {
+      const validatedData = insertFeedbackSchema.parse({ ...req.body });
+      const item = await storage.createFeedbackItem(validatedData);
+      res.json(item);
+    } catch(error){
+      res.status(400).json({ error: 'Failed to create feedback item' });
     }
   });
 
