@@ -1,4 +1,4 @@
-import { scratchpad, tasks, type InsertScratchpad, type InsertTask, type ScratchpadItem, type Task } from '@shared/schema';
+import { feedback, FeedbackItem, InsertFeedback, scratchpad, tasks, type InsertScratchpad, type InsertTask, type ScratchpadItem, type Task } from '@shared/schema';
 import { and, eq } from 'drizzle-orm';
 import { db } from './db';
 
@@ -13,11 +13,13 @@ export interface IStorage {
   getScratchpad(userId: string): Promise<ScratchpadItem[]>;
   createScratchpadItem(item: InsertScratchpad): Promise<ScratchpadItem>;
   deleteScratchpadItem(id: string, userId: string): Promise<boolean>;
+
+  // feedback
+  createFeedbackItem(item: InsertFeedback): Promise<FeedbackItem>;
 }
 
 export class DbStorage implements IStorage {
   async getTasks(userId: string): Promise<Task[]> {
-    console.log("Now fething the tasks for userId",userId);
     return await db.select().from(tasks).where(eq(tasks.userId, userId));
   }
 
@@ -44,7 +46,6 @@ export class DbStorage implements IStorage {
   }
 
   async getScratchpad(userId: string): Promise<ScratchpadItem[]> {
-    console.log("Now fething the scratchpad for userId",userId);
     return await db.select().from(scratchpad).where(eq(scratchpad.userId, userId));
   }
 
@@ -59,6 +60,13 @@ export class DbStorage implements IStorage {
       .where(and(eq(scratchpad.id, id), eq(scratchpad.userId, userId)))
       .returning();
     return result.length > 0;
+  }
+
+  async createFeedbackItem(item: InsertFeedback): Promise<FeedbackItem> {
+    const [newItem]  = await db
+      .insert(feedback)
+      .values(item).returning();
+      return newItem;
   }
 }
 

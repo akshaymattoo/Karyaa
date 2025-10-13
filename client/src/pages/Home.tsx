@@ -1,11 +1,13 @@
 import { AuthButton } from '@/components/AuthButton';
 import { CalendarTab } from '@/components/CalendarTab';
 import { EmptyState } from '@/components/EmptyState';
+import FeedbackModal from '@/components/FeedbackModal';
 import { ScratchpadTab } from '@/components/ScratchpadTab';
 import { TasksTab } from '@/components/TasksTab';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useFeedback } from '@/hooks/useFeedback';
 import { useScratchpad } from '@/hooks/useScratchpad';
 import { useTasks } from '@/hooks/useTasks';
 import { Calendar, CheckCircle2, FileText, Lock } from 'lucide-react';
@@ -16,6 +18,7 @@ export default function Home() {
   const { toast } = useToast();
   const { tasks, loading: tasksLoading, addTask, toggleComplete, deleteTask } = useTasks();
   const { items: scratchpadItems, loading: scratchpadLoading, addItem, deleteItem } = useScratchpad();
+  const {   addFeedbackItem } = useFeedback();
   const [activeTab, setActiveTab] = useState('tasks');
 
   const handleAddTask = async (title: string, bucket: 'work' | 'personal', date: string) => {
@@ -53,12 +56,19 @@ export default function Home() {
     });
   };
 
-    const handleEditScratchpad = async (itemId: string) => {
+  const handleEditScratchpad = async (itemId: string) => {
      
     toast({
       title: 'Item edited',
     });
   };
+
+  const handleAddFeedback = async (itemId:string) => {
+    await addFeedbackItem(itemId);
+     toast({
+      title: 'Feedback submitted',
+    });
+  }
 
   const handleSendToTasks = async (itemId: string, bucket: 'work' | 'personal', date: string) => {
     const item = scratchpadItems.find(i => i.id === itemId);
@@ -193,6 +203,10 @@ export default function Home() {
           </TabsContent>
         </Tabs>
       </main>
+
+      <footer>
+        <FeedbackModal onAddItem={handleAddFeedback} />
+      </footer>
     </div>
   );
 }

@@ -14,3 +14,9 @@ CREATE TABLE "tasks" (
 	"completed" boolean DEFAULT false NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
+
+CREATE TABLE "feedback" (
+	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"title" text NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL
+);
