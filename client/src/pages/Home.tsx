@@ -1,6 +1,7 @@
 import { AuthButton } from '@/components/AuthButton';
 import { CalendarTab } from '@/components/CalendarTab';
 import { EmptyState } from '@/components/EmptyState';
+import FeedbackModal from '@/components/FeedbackModal';
 import { ScratchpadTab } from '@/components/ScratchpadTab';
 import { TasksTab } from '@/components/TasksTab';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -202,6 +203,10 @@ export default function Home() {
           </TabsContent>
         </Tabs>
       </main>
+
+      <footer>
+        <FeedbackModal onAddItem={handleAddFeedback} />
+      </footer>
     </div>
   );
 }
