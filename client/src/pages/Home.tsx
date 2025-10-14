@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useFeedback } from '@/hooks/useFeedback';
 import { useScratchpad } from '@/hooks/useScratchpad';
 import { useTasks } from '@/hooks/useTasks';
-import { Calendar, CheckCircle2, FileText, Lock } from 'lucide-react';
+import { Calendar, CheckCircle2, FileText, Lock, NotebookPenIcon } from 'lucide-react';
 import { useState } from 'react';
 
 export default function Home() {
@@ -96,7 +96,10 @@ export default function Home() {
       <header className="border-b sticky top-0 bg-background/95 backdrop-blur z-50">
         <div className="max-w-6xl mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold">Karyaa</h1>
+            <div className="flex items-center gap-1">
+              <NotebookPenIcon  className="h-5.2 w-5.2"/>
+              <h1 className="text-2xl font-semibold">Karyaa</h1>
+            </div>
             <p className="text-sm text-muted-foreground">Organize your work & life</p>
           </div>
           <AuthButton />

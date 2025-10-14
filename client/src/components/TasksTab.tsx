@@ -1,7 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
@@ -18,6 +17,7 @@ import { CalendarIcon, CheckCircle2, ChevronLeft, ChevronRight, Plus } from 'luc
 import { useState } from 'react';
 import { EmptyState } from './EmptyState';
 import { TaskCard } from './TaskCard';
+import { AutoResizeTextarea } from '@/components/ui/auto-resize-textarea';
 
 interface TasksTabProps {
   tasks: Task[];
@@ -141,16 +141,21 @@ export function TasksTab({ tasks, onAddTask, onToggleComplete, onDeleteTask }: T
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1">
             <Label htmlFor="task-title" className="sr-only">Task title</Label>
-            <Input
+            <AutoResizeTextarea
               id="task-title"
-              type="text"
               placeholder="Add a new task..."
               value={newTaskTitle}
               onChange={(e) => {
                 setNewTaskTitle(e.target.value);
                 setError('');
               }}
-              className={cn('h-10', error && 'border-destructive')}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' && !event.shiftKey) {
+                  event.preventDefault();
+                  event.currentTarget.form?.requestSubmit();
+                }
+              }}
+              className={cn('min-h-[40px]', error && 'border-destructive')}
               data-testid="input-task-title"
             />
             {error && <p className="text-sm text-destructive mt-1" data-testid="text-error">{error}</p>}
