@@ -7,7 +7,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
@@ -23,6 +22,7 @@ import { CalendarIcon, FileText, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { EmptyState } from './EmptyState';
 import { ScratchpadCard } from './ScratchpadCard';
+import { AutoResizeTextarea } from '@/components/ui/auto-resize-textarea';
 
 interface ScratchpadTabProps {
   items: ScratchpadItem[];
@@ -91,24 +91,33 @@ export function ScratchpadTab({ items, tasks, onAddItem, onDeleteItem, onSendToT
   return (
     <div className="max-w-4xl mx-auto px-4 md:px-6 py-8">
       <form onSubmit={handleSubmit} className="mb-8">
-        <div className="flex gap-4">
+        <div className="flex gap-4 items-start">
           <div className="flex-1">
             <Label htmlFor="item-title" className="sr-only">Idea or note</Label>
-            <Input
+            <AutoResizeTextarea
               id="item-title"
-              type="text"
               placeholder="Capture an idea or note..."
               value={newItemTitle}
               onChange={(e) => {
                 setNewItemTitle(e.target.value);
                 setError('');
               }}
-              className={error && 'border-destructive'}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' && !event.shiftKey) {
+                  event.preventDefault();
+                  event.currentTarget.form?.requestSubmit();
+                }
+              }}
+              className={`${error ? 'border-destructive' : ''} min-h-[40px]`}
               data-testid="input-scratchpad-title"
             />
             {error && <p className="text-sm text-destructive mt-1">{error}</p>}
           </div>
-          <Button type="submit" className="gap-2" data-testid="button-add-scratchpad">
+          <Button
+            type="submit"
+            className="h-10 gap-2 flex-shrink-0 self-start"
+            data-testid="button-add-scratchpad"
+          >
             <Plus className="h-4 w-4" />
             Add
           </Button>
