@@ -19,10 +19,19 @@ import {
 import { ScratchpadItem, Task } from '@shared/schema';
 import { format } from 'date-fns';
 import { CalendarIcon, FileText, Plus } from 'lucide-react';
-import { useState } from 'react';
+import { type ChangeEvent, type KeyboardEvent, useRef, useState } from 'react';
 import { EmptyState } from './EmptyState';
 import { ScratchpadCard } from './ScratchpadCard';
 import { AutoResizeTextarea } from '@/components/ui/auto-resize-textarea';
+import { EmojiPicker } from '@/components/EmojiPicker';
+import {
+  findActiveShortcode,
+  replaceEmojiShortcodes,
+  replaceShortcodeSegment,
+  searchEmojiShortcodes,
+  type EmojiDefinition,
+} from '@/lib/emoji';
+import { cn } from '@/lib/utils';
 
 interface ScratchpadTabProps {
   items: ScratchpadItem[];
@@ -44,6 +53,11 @@ export function ScratchpadTab({ items, tasks, onAddItem, onDeleteItem, onSendToT
   });
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [error, setError] = useState('');
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const [emojiSuggestions, setEmojiSuggestions] = useState<EmojiDefinition[]>([]);
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(0);
+  const [activeShortcode, setActiveShortcode] = useState<{ start: number; end: number; query: string } | null>(null);
+  const suggestionsVisible = emojiSuggestions.length > 0;
 
   // Calculate remaining slots for the selected date (count ALL tasks, not just active)
   const getTasksForDate = (date: Date) => {
@@ -60,13 +74,28 @@ export function ScratchpadTab({ items, tasks, onAddItem, onDeleteItem, onSendToT
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!newItemTitle.trim()) {
+    let workingTitle = newItemTitle;
+    if (activeShortcode && emojiSuggestions.length > 0) {
+      const candidate = emojiSuggestions[activeSuggestionIndex] ?? emojiSuggestions[0];
+      const replaced = replaceShortcodeSegment(
+        workingTitle,
+        { start: activeShortcode.start, end: activeShortcode.end },
+        candidate.emoji,
+      );
+      workingTitle = replaced.text;
+    }
+
+    const { text } = replaceEmojiShortcodes(workingTitle);
+    const normalized = text.trim();
+
+    if (!normalized) {
       setError('Idea title required');
       return;
     }
-    onAddItem(newItemTitle.trim());
+    onAddItem(normalized);
     setNewItemTitle('');
     setError('');
+    clearEmojiSuggestions();
   };
 
   const handleSendToTasks = () => {
@@ -88,29 +117,175 @@ export function ScratchpadTab({ items, tasks, onAddItem, onDeleteItem, onSendToT
     setError('');
   };
 
+  const clearEmojiSuggestions = () => {
+    setEmojiSuggestions([]);
+    setActiveSuggestionIndex(0);
+    setActiveShortcode(null);
+  };
+
+  const updateEmojiSuggestions = (text: string, caretPosition: number) => {
+    const shortcode = findActiveShortcode(text, caretPosition);
+
+    if (!shortcode) {
+      clearEmojiSuggestions();
+      return;
+    }
+
+    const matches = searchEmojiShortcodes(shortcode.query);
+
+    if (matches.length === 0) {
+      clearEmojiSuggestions();
+      return;
+    }
+
+    setEmojiSuggestions(matches);
+    setActiveShortcode(shortcode);
+    setActiveSuggestionIndex((prev) => Math.min(prev, matches.length - 1));
+  };
+
+  const handleTextareaChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
+    const { value, selectionStart } = event.target;
+    const { text, caretPosition } = replaceEmojiShortcodes(
+      value,
+      selectionStart ?? value.length,
+    );
+
+    setNewItemTitle(text);
+    setError('');
+    updateEmojiSuggestions(text, caretPosition);
+
+    requestAnimationFrame(() => {
+      const textarea = textareaRef.current;
+      if (textarea) {
+        textarea.setSelectionRange(caretPosition, caretPosition);
+      }
+    });
+  };
+
+  const handleInsertEmoji = (emoji: string) => {
+    clearEmojiSuggestions();
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      setNewItemTitle(prev => prev + emoji);
+      return;
+    }
+
+    const selectionStart = textarea.selectionStart ?? newItemTitle.length;
+    const selectionEnd = textarea.selectionEnd ?? newItemTitle.length;
+
+    const newValue =
+      newItemTitle.slice(0, selectionStart) + emoji + newItemTitle.slice(selectionEnd);
+
+    setNewItemTitle(newValue);
+    setError('');
+
+    requestAnimationFrame(() => {
+      const cursorPosition = selectionStart + emoji.length;
+      textarea.setSelectionRange(cursorPosition, cursorPosition);
+      textarea.focus();
+    });
+  };
+
+  const applyEmojiSuggestion = (emoji: string) => {
+    if (!activeShortcode) {
+      handleInsertEmoji(emoji);
+      return;
+    }
+
+    const { text, caretPosition } = replaceShortcodeSegment(
+      newItemTitle,
+      { start: activeShortcode.start, end: activeShortcode.end },
+      emoji,
+    );
+
+    setNewItemTitle(text);
+    setError('');
+    clearEmojiSuggestions();
+
+    requestAnimationFrame(() => {
+      const textarea = textareaRef.current;
+      if (textarea) {
+        textarea.focus();
+        textarea.setSelectionRange(caretPosition, caretPosition);
+      }
+    });
+  };
+
+  const handleTextareaKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (emojiSuggestions.length > 0) {
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        setActiveSuggestionIndex((prev) => (prev + 1) % emojiSuggestions.length);
+        return;
+      }
+
+      if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        setActiveSuggestionIndex((prev) => (prev - 1 + emojiSuggestions.length) % emojiSuggestions.length);
+        return;
+      }
+
+      if (event.key === 'Enter' || event.key === 'Tab') {
+        event.preventDefault();
+        applyEmojiSuggestion(emojiSuggestions[activeSuggestionIndex].emoji);
+        return;
+      }
+
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        clearEmojiSuggestions();
+        return;
+      }
+    }
+
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      event.currentTarget.form?.requestSubmit();
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto px-4 md:px-6 py-8">
       <form onSubmit={handleSubmit} className="mb-8">
         <div className="flex gap-4 items-start">
           <div className="flex-1">
             <Label htmlFor="item-title" className="sr-only">Idea or note</Label>
-            <AutoResizeTextarea
-              id="item-title"
-              placeholder="Capture an idea or note..."
-              value={newItemTitle}
-              onChange={(e) => {
-                setNewItemTitle(e.target.value);
-                setError('');
-              }}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' && !event.shiftKey) {
-                  event.preventDefault();
-                  event.currentTarget.form?.requestSubmit();
-                }
-              }}
-              className={`${error ? 'border-destructive' : ''} min-h-[40px]`}
-              data-testid="input-scratchpad-title"
-            />
+            <div className="relative">
+              <AutoResizeTextarea
+                ref={textareaRef}
+                id="item-title"
+                placeholder="Capture an idea or note..."
+                value={newItemTitle}
+                onChange={handleTextareaChange}
+                onKeyDown={handleTextareaKeyDown}
+                className={`${error ? 'border-destructive' : ''} min-h-[40px] pr-12`}
+                data-testid="input-scratchpad-title"
+              />
+              <div className="absolute bottom-1.5 right-1.5">
+                <EmojiPicker onSelect={handleInsertEmoji} />
+              </div>
+              {suggestionsVisible && (
+                <div className="absolute left-0 top-full z-50 mt-2 w-56 rounded-md border bg-popover p-1 shadow-md">
+                  {emojiSuggestions.map((suggestion, index) => (
+                    <button
+                      key={`${suggestion.emoji}-${suggestion.names[0]}`}
+                      type="button"
+                      className={cn(
+                        'flex w-full items-center gap-2 rounded-sm px-2 py-1 text-sm transition-colors',
+                        index === activeSuggestionIndex ? 'bg-muted text-foreground' : 'text-muted-foreground',
+                      )}
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        applyEmojiSuggestion(suggestion.emoji);
+                      }}
+                    >
+                      <span className="text-lg">{suggestion.emoji}</span>
+                      <span className="text-xs">:{suggestion.names[0]}:</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             {error && <p className="text-sm text-destructive mt-1">{error}</p>}
           </div>
           <Button

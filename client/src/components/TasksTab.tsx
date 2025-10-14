@@ -14,10 +14,18 @@ import { cn } from '@/lib/utils';
 import { Task } from '@shared/schema';
 import { format } from 'date-fns';
 import { CalendarIcon, CheckCircle2, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
-import { useState } from 'react';
+import { type ChangeEvent, type KeyboardEvent, useRef, useState } from 'react';
 import { EmptyState } from './EmptyState';
 import { TaskCard } from './TaskCard';
 import { AutoResizeTextarea } from '@/components/ui/auto-resize-textarea';
+import { EmojiPicker } from '@/components/EmojiPicker';
+import {
+  findActiveShortcode,
+  replaceEmojiShortcodes,
+  replaceShortcodeSegment,
+  searchEmojiShortcodes,
+  type EmojiDefinition,
+} from '@/lib/emoji';
 
 interface TasksTabProps {
   tasks: Task[];
@@ -42,6 +50,11 @@ export function TasksTab({ tasks, onAddTask, onToggleComplete, onDeleteTask }: T
   });
   const [error, setError] = useState('');
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const [emojiSuggestions, setEmojiSuggestions] = useState<EmojiDefinition[]>([]);
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(0);
+  const [activeShortcode, setActiveShortcode] = useState<{ start: number; end: number; query: string } | null>(null);
+  const suggestionsVisible = emojiSuggestions.length > 0;
 
   // Get ALL tasks for the currently selected date (for checking the limit)
   const getTasksForDate = (date: Date) => {
@@ -56,14 +69,53 @@ export function TasksTab({ tasks, onAddTask, onToggleComplete, onDeleteTask }: T
   const taskCount = tasksForSelectedDate.length;
   const canAddTask = taskCount < 8;
 
+  const clearEmojiSuggestions = () => {
+    setEmojiSuggestions([]);
+    setActiveSuggestionIndex(0);
+    setActiveShortcode(null);
+  };
+
+  const updateEmojiSuggestions = (text: string, caretPosition: number) => {
+    const shortcode = findActiveShortcode(text, caretPosition);
+
+    if (!shortcode) {
+      clearEmojiSuggestions();
+      return;
+    }
+
+    const matches = searchEmojiShortcodes(shortcode.query);
+
+    if (matches.length === 0) {
+      clearEmojiSuggestions();
+      return;
+    }
+
+    setEmojiSuggestions(matches);
+    setActiveShortcode(shortcode);
+    setActiveSuggestionIndex((prev) => Math.min(prev, matches.length - 1));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!newTaskTitle.trim()) {
+    let workingTitle = newTaskTitle;
+    if (activeShortcode && emojiSuggestions.length > 0) {
+      const candidate = emojiSuggestions[activeSuggestionIndex] ?? emojiSuggestions[0];
+      const replaced = replaceShortcodeSegment(
+        workingTitle,
+        { start: activeShortcode.start, end: activeShortcode.end },
+        candidate.emoji,
+      );
+      workingTitle = replaced.text;
+    }
+
+    const { text } = replaceEmojiShortcodes(workingTitle);
+    const normalizedTitle = text.trim();
+
+    if (!normalizedTitle) {
       setError('Task title required');
       return;
     }
-    console.log('--tasks---',newTaskTitle);
     if (!canAddTask) {
       setError('Task limit reached for this day. Delete a task to add more.');
       return;
@@ -75,9 +127,111 @@ export function TasksTab({ tasks, onAddTask, onToggleComplete, onDeleteTask }: T
     const day = String(selectedDate.getDate()).padStart(2, '0');
     const localDateString = `${year}-${month}-${day}`;
 
-    onAddTask(newTaskTitle.trim(), selectedBucket, localDateString);
+    onAddTask(normalizedTitle, selectedBucket, localDateString);
     setNewTaskTitle('');
     setError('');
+    clearEmojiSuggestions();
+  };
+
+  const handleTextareaChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
+    const { value, selectionStart } = event.target;
+    const { text, caretPosition } = replaceEmojiShortcodes(
+      value,
+      selectionStart ?? value.length,
+    );
+
+    setNewTaskTitle(text);
+    setError('');
+    updateEmojiSuggestions(text, caretPosition);
+
+    requestAnimationFrame(() => {
+      const textarea = textareaRef.current;
+      if (textarea) {
+        textarea.setSelectionRange(caretPosition, caretPosition);
+      }
+    });
+  };
+
+  const handleInsertEmoji = (emoji: string) => {
+    clearEmojiSuggestions();
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      setNewTaskTitle(prev => prev + emoji);
+      return;
+    }
+
+    const selectionStart = textarea.selectionStart ?? newTaskTitle.length;
+    const selectionEnd = textarea.selectionEnd ?? newTaskTitle.length;
+
+    const newValue =
+      newTaskTitle.slice(0, selectionStart) + emoji + newTaskTitle.slice(selectionEnd);
+
+    setNewTaskTitle(newValue);
+    setError('');
+
+    requestAnimationFrame(() => {
+      const cursorPosition = selectionStart + emoji.length;
+      textarea.setSelectionRange(cursorPosition, cursorPosition);
+      textarea.focus();
+    });
+  };
+
+  const applyEmojiSuggestion = (emoji: string) => {
+    if (!activeShortcode) {
+      handleInsertEmoji(emoji);
+      return;
+    }
+
+    const { text, caretPosition } = replaceShortcodeSegment(
+      newTaskTitle,
+      { start: activeShortcode.start, end: activeShortcode.end },
+      emoji,
+    );
+
+    setNewTaskTitle(text);
+    setError('');
+    clearEmojiSuggestions();
+
+    requestAnimationFrame(() => {
+      const textarea = textareaRef.current;
+      if (textarea) {
+        textarea.focus();
+        textarea.setSelectionRange(caretPosition, caretPosition);
+      }
+    });
+  };
+
+  const handleTextareaKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (emojiSuggestions.length > 0) {
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        setActiveSuggestionIndex((prev) => (prev + 1) % emojiSuggestions.length);
+        return;
+      }
+
+      if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        setActiveSuggestionIndex((prev) => (prev - 1 + emojiSuggestions.length) % emojiSuggestions.length);
+        return;
+      }
+
+      if (event.key === 'Enter' || event.key === 'Tab') {
+        event.preventDefault();
+        applyEmojiSuggestion(emojiSuggestions[activeSuggestionIndex].emoji);
+        return;
+      }
+
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        clearEmojiSuggestions();
+        return;
+      }
+    }
+
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      event.currentTarget.form?.requestSubmit();
+    }
   };
 
   const filteredTasks = tasks.filter(task => {
@@ -141,23 +295,42 @@ export function TasksTab({ tasks, onAddTask, onToggleComplete, onDeleteTask }: T
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1">
             <Label htmlFor="task-title" className="sr-only">Task title</Label>
-            <AutoResizeTextarea
-              id="task-title"
-              placeholder="Add a new task..."
-              value={newTaskTitle}
-              onChange={(e) => {
-                setNewTaskTitle(e.target.value);
-                setError('');
-              }}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' && !event.shiftKey) {
-                  event.preventDefault();
-                  event.currentTarget.form?.requestSubmit();
-                }
-              }}
-              className={cn('min-h-[40px]', error && 'border-destructive')}
-              data-testid="input-task-title"
-            />
+            <div className="relative">
+              <AutoResizeTextarea
+                ref={textareaRef}
+                id="task-title"
+                placeholder="Add a new task..."
+                value={newTaskTitle}
+                onChange={handleTextareaChange}
+                onKeyDown={handleTextareaKeyDown}
+                className={cn('min-h-[40px] pr-12', error && 'border-destructive')}
+                data-testid="input-task-title"
+              />
+              <div className="absolute bottom-1.5 right-1.5">
+                <EmojiPicker onSelect={handleInsertEmoji} />
+              </div>
+              {suggestionsVisible && (
+                <div className="absolute left-0 top-full z-50 mt-2 w-56 rounded-md border bg-popover p-1 shadow-md">
+                  {emojiSuggestions.map((suggestion, index) => (
+                    <button
+                      key={`${suggestion.emoji}-${suggestion.names[0]}`}
+                      type="button"
+                      className={cn(
+                        'flex w-full items-center gap-2 rounded-sm px-2 py-1 text-sm transition-colors',
+                        index === activeSuggestionIndex ? 'bg-muted text-foreground' : 'text-muted-foreground',
+                      )}
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        applyEmojiSuggestion(suggestion.emoji);
+                      }}
+                    >
+                      <span className="text-lg">{suggestion.emoji}</span>
+                      <span className="text-xs">:{suggestion.names[0]}:</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             {error && <p className="text-sm text-destructive mt-1" data-testid="text-error">{error}</p>}
           </div>
 
