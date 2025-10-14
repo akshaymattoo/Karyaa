@@ -97,8 +97,8 @@ export default function Home() {
         <div className="max-w-6xl mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
           <div>
             <div className="flex items-center gap-1">
-              <NotebookPenIcon  className="h-5.2 w-5.2"/>
-              <h1 className="text-2xl font-semibold">Karyaa</h1>
+              <NotebookPenIcon  className="h-5 w-5"/>
+              <h1 className="text-xl font-semibold">Karyaa</h1>
             </div>
             <p className="text-sm text-muted-foreground">Organize your work & life</p>
           </div>
