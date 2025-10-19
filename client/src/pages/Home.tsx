@@ -5,6 +5,7 @@ import FeedbackModal from '@/components/FeedbackModal';
 import { ScratchpadTab } from '@/components/ScratchpadTab';
 import { TasksTab } from '@/components/TasksTab';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useFeedback } from '@/hooks/useFeedback';
@@ -100,7 +101,7 @@ export default function Home() {
               <NotebookPenIcon  className="h-5 w-5"/>
               <h1 className="text-xl font-semibold">Karyaa</h1>
             </div>
-            <p className="text-sm text-muted-foreground">Organize your work & life</p>
+            <p className="text-sm text-muted-foreground">Think it. Plan it. Do it.</p>
           </div>
           <AuthButton />
         </div>
@@ -110,36 +111,80 @@ export default function Home() {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="border-b">
             <div className="max-w-6xl mx-auto px-4 md:px-6">
-              <TabsList className="h-12 bg-transparent border-0 gap-8">
-                <TabsTrigger
-                  value="tasks"
-                  className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent"
-                  data-testid="tab-tasks"
-                >
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
-                  Tasks
-                </TabsTrigger>
-                <TabsTrigger
-                  value="scratchpad"
-                  className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent"
-                  disabled={!user}
-                  data-testid="tab-scratchpad"
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Scratchpad
-                  {!user && <Lock className="h-3 w-3 ml-2" />}
-                </TabsTrigger>
-                <TabsTrigger
-                  value="calendar"
-                  className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent"
-                  disabled={!user}
-                  data-testid="tab-calendar"
-                >
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Calendar
-                  {!user && <Lock className="h-3 w-3 ml-2" />}
-                </TabsTrigger>
-              </TabsList>
+              <TooltipProvider delayDuration={0}>
+                <TabsList className="h-12 bg-transparent border-0 gap-8">
+                  <TabsTrigger
+                    value="tasks"
+                    className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent"
+                    data-testid="tab-tasks"
+                  >
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    Tasks
+                  </TabsTrigger>
+
+                  {!user ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="inline-flex">
+                          <TabsTrigger
+                            value="scratchpad"
+                            className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent"
+                            disabled
+                            data-testid="tab-scratchpad"
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            Scratchpad
+                            <Lock className="h-3 w-3 ml-2" />
+                          </TabsTrigger>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        Sign in to unlock Scratchpad
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    <TabsTrigger
+                      value="scratchpad"
+                      className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent"
+                      data-testid="tab-scratchpad"
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      Scratchpad
+                    </TabsTrigger>
+                  )}
+
+                  {!user ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="inline-flex">
+                          <TabsTrigger
+                            value="calendar"
+                            className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent"
+                            disabled
+                            data-testid="tab-calendar"
+                          >
+                            <Calendar className="h-4 w-4 mr-2" />
+                            Calendar
+                            <Lock className="h-3 w-3 ml-2" />
+                          </TabsTrigger>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        Sign in to view your calendar
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    <TabsTrigger
+                      value="calendar"
+                      className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent"
+                      data-testid="tab-calendar"
+                    >
+                      <Calendar className="h-4 w-4 mr-2" />
+                      Calendar
+                    </TabsTrigger>
+                  )}
+                </TabsList>
+              </TooltipProvider>
             </div>
           </div>
 
@@ -166,6 +211,7 @@ export default function Home() {
                 description="Capture unlimited ideas and notes. Available with a free Google account."
                 actionLabel="Sign in with Google"
                 onAction={signInWithGoogle}
+                hoverTitle="Sign in to unlock Scratchpad"
               />
             ) : scratchpadLoading ? (
               <div className="flex items-center justify-center py-16">
@@ -191,6 +237,7 @@ export default function Home() {
                 description="Visualize your tasks across the month. Available with a free Google account."
                 actionLabel="Sign in with Google"
                 onAction={signInWithGoogle}
+                hoverTitle="Sign in to view your calendar"
               />
             ) : tasksLoading ? (
               <div className="flex items-center justify-center py-16">
