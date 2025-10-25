@@ -11,6 +11,7 @@ export const tasks = pgTable("tasks", {
   date: text("date").notNull(), // ISO date string
   completed: boolean("completed").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const scratchpad = pgTable("scratchpad", {
@@ -29,6 +30,7 @@ export const feedback = pgTable("feedback", {
 export const insertTaskSchema = createInsertSchema(tasks).omit({
   id: true,
   createdAt: true,
+  updatedAt: true,
 });
 
 export const insertScratchpadSchema = createInsertSchema(scratchpad).omit({

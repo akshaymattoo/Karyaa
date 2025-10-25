@@ -161,11 +161,13 @@ export function useTasks() {
         });
       }
     } else {
+      const timestamp = new Date();
       const localTask: Task = {
         ...newTask,
         id: crypto.randomUUID(),
         completed: false,
-        createdAt: new Date(),
+        createdAt: timestamp,
+        updatedAt: timestamp,
       };
       const updatedTasks = [...tasks, localTask];
       setTasks(updatedTasks);
@@ -178,7 +180,7 @@ export function useTasks() {
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
 
-    const updatedTask = { ...task, completed: !task.completed };
+    const updatedTask = { ...task, completed: !task.completed, updatedAt: new Date() };
 
     if (user) {
       try {

@@ -29,9 +29,14 @@ export class DbStorage implements IStorage {
   }
 
   async updateTask(id: string, userId: string, updates: Partial<Task>): Promise<Task | undefined> {
+    console.log("-----updates---", JSON.stringify(updates));
+    const updateData: Partial<Task> = {
+      ...updates,
+      updatedAt: new Date(),
+    };
     const [updated] = await db
       .update(tasks)
-      .set(updates)
+      .set(updateData)
       .where(and(eq(tasks.id, id), eq(tasks.userId, userId)))
       .returning();
     return updated;
