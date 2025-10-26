@@ -108,10 +108,45 @@ export function useScratchpad() {
     }
   };
 
+  const updateItem = async (
+    itemId: string,
+    updates: Partial<Pick<ScratchpadItem, 'title'>>
+  ) => {
+    if (!user) return;
+
+    try {
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+
+      if (!token) {
+        throw new Error('No auth token');
+      }
+
+      const response = await fetch(`/api/scratchpad/${itemId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(updates),
+      });
+      console.log('response from the API',response)
+      if (response.ok) {
+        const updatedItem = await response.json();
+        console.log(' --- updatedItem in useScratpad--',updateItem)
+        setItems(prev => prev.map(item => (item.id === itemId ? updatedItem : item)));
+        return updatedItem;
+      }
+    } catch (error) {
+      console.error('Error updating scratchpad item:', error);
+    }
+  };
+
   return {
     items,
     loading,
     addItem,
     deleteItem,
+    updateItem,
   };
 }

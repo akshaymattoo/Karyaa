@@ -128,7 +128,6 @@ export function useTasks() {
     };
 
     if (user) {
-      console.log("inside user true --")
       try {
         const session = await supabase.auth.getSession();
         const token = session.data.session?.access_token;
@@ -162,11 +161,13 @@ export function useTasks() {
         });
       }
     } else {
+      const timestamp = new Date();
       const localTask: Task = {
         ...newTask,
         id: crypto.randomUUID(),
         completed: false,
-        createdAt: new Date(),
+        createdAt: timestamp,
+        updatedAt: timestamp,
       };
       const updatedTasks = [...tasks, localTask];
       setTasks(updatedTasks);
@@ -179,7 +180,7 @@ export function useTasks() {
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
 
-    const updatedTask = { ...task, completed: !task.completed };
+    const updatedTask = { ...task, completed: !task.completed, updatedAt: new Date() };
 
     if (user) {
       try {
@@ -247,11 +248,64 @@ export function useTasks() {
     }
   };
 
+  const updateTask = async (
+    taskId: string,
+    updates: Partial<Pick<Task, 'title' | 'bucket' | 'date'>>
+  ) => {
+    const existingTask = tasks.find(t => t.id === taskId);
+    if (!existingTask) return;
+
+    if (user) {
+      try {
+        const session = await supabase.auth.getSession();
+        const token = session.data.session?.access_token;
+
+        if (!token) {
+          throw new Error('No auth token');
+        }
+
+        const response = await fetch(`/api/tasks/${taskId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify(updates),
+        });
+
+        if (response.ok) {
+          const updated = await response.json();
+          const updatedTasks = tasks.map(task =>
+            task.id === taskId ? updated : task
+          );
+          setTasks(updatedTasks);
+          localStorageService.saveTasks(updatedTasks);
+          return updated;
+        }
+      } catch (error) {
+        console.error('Error updating task:', error);
+      }
+    } else {
+      const updatedTask = {
+        ...existingTask,
+        ...updates,
+        updatedAt: new Date(),
+      } as Task;
+      const updatedTasks = tasks.map(task =>
+        task.id === taskId ? updatedTask : task
+      );
+      setTasks(updatedTasks);
+      localStorageService.saveTasks(updatedTasks);
+      return updatedTask;
+    }
+  };
+
   return {
     tasks,
     loading,
     addTask,
     toggleComplete,
     deleteTask,
+    updateTask,
   };
 }

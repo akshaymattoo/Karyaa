@@ -12,6 +12,7 @@ export interface IStorage {
   // Scratchpad
   getScratchpad(userId: string): Promise<ScratchpadItem[]>;
   createScratchpadItem(item: InsertScratchpad): Promise<ScratchpadItem>;
+  updateScratchpadItem(id: string, userId: string, updates: Partial<ScratchpadItem>): Promise<ScratchpadItem | undefined>;
   deleteScratchpadItem(id: string, userId: string): Promise<boolean>;
 
   // feedback
@@ -29,9 +30,13 @@ export class DbStorage implements IStorage {
   }
 
   async updateTask(id: string, userId: string, updates: Partial<Task>): Promise<Task | undefined> {
+    const updateData: Partial<Task> = {
+      ...updates,
+      updatedAt: new Date(),
+    };
     const [updated] = await db
       .update(tasks)
-      .set(updates)
+      .set(updateData)
       .where(and(eq(tasks.id, id), eq(tasks.userId, userId)))
       .returning();
     return updated;
@@ -52,6 +57,17 @@ export class DbStorage implements IStorage {
   async createScratchpadItem(item: InsertScratchpad): Promise<ScratchpadItem> {
     const [newItem] = await db.insert(scratchpad).values(item).returning();
     return newItem;
+  }
+
+  async updateScratchpadItem(id: string, userId: string, updates: Partial<ScratchpadItem>): Promise<ScratchpadItem | undefined> {
+    const [updated] = await db
+      .update(scratchpad)
+      .set(updates)
+      .where(and(eq(scratchpad.id, id), eq(scratchpad.userId, userId)))
+      .returning();
+
+      console.log("--updated item returned ---",updated)
+    return updated;
   }
 
   async deleteScratchpadItem(id: string, userId: string): Promise<boolean> {
