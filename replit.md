@@ -38,6 +38,7 @@ You need to set up a Supabase project and configure Google OAuth:
    - Go to Project Settings → API
    - Copy **Project URL** → Set as `VITE_SUPABASE_URL`
    - Copy **anon/public key** → Set as `VITE_SUPABASE_ANON_KEY`
+   - Copy **service_role key** → Set as `SUPABASE_SERVICE_ROLE_KEY` (server-only, never expose to the client)
 5. **Get Database URL:**
    - Go to Project Settings → Database
    - Copy the connection string under "Connection pooling"
@@ -48,6 +49,7 @@ The following secrets are required (already configured in Replit Secrets):
 - `DATABASE_URL` - Supabase PostgreSQL connection string
 - `VITE_SUPABASE_URL` - Supabase project URL
 - `VITE_SUPABASE_ANON_KEY` - Supabase anonymous key
+- `SUPABASE_SERVICE_ROLE_KEY` - Supabase service key for secure server-side auth verification
 
 ## Features
 

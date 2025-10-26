@@ -17,8 +17,8 @@ import { useState } from 'react';
 export default function Home() {
   const { user, loading: authLoading, signInWithGoogle } = useAuth();
   const { toast } = useToast();
-  const { tasks, loading: tasksLoading, addTask, toggleComplete, deleteTask } = useTasks();
-  const { items: scratchpadItems, loading: scratchpadLoading, addItem, deleteItem } = useScratchpad();
+  const { tasks, loading: tasksLoading, addTask, toggleComplete, deleteTask, updateTask } = useTasks();
+  const { items: scratchpadItems, loading: scratchpadLoading, addItem, deleteItem, updateItem } = useScratchpad();
   const {   addFeedbackItem } = useFeedback();
   const [activeTab, setActiveTab] = useState('tasks');
 
@@ -42,6 +42,19 @@ export default function Home() {
     });
   };
 
+  const handleUpdateTask = async (
+    taskId: string,
+    updates: { title: string; bucket: 'work' | 'personal'; date: string }
+  ): Promise<boolean> => {
+    const updated = await updateTask(taskId, updates);
+    toast({
+      title: updated ? 'Task updated' : 'Unable to update task',
+      description: updated ? undefined : 'Please try again in a moment.',
+      variant: updated ? 'default' : 'destructive',
+    });
+    return Boolean(updated);
+  };
+
   const handleAddScratchpad = async (title: string) => {
     await addItem(title);
     toast({
@@ -57,11 +70,26 @@ export default function Home() {
     });
   };
 
-  const handleEditScratchpad = async (itemId: string) => {
-     
+  const handleUpdateScratchpad = async (itemId: string, title: string): Promise<boolean> => {
+    const normalized = title.trim();
+    console.log("normalized--",normalized);
+    if (!normalized) {
+      toast({
+        title: 'Update failed',
+        description: 'Scratchpad text cannot be empty.',
+        variant: 'destructive',
+      });
+      return false;
+    }
+
+    const updated = await updateItem(itemId, { title: normalized });
+    console.log('----updated--',updated)
     toast({
-      title: 'Item edited',
+      title: updated ? 'Item updated' : 'Unable to update item',
+      description: updated ? undefined : 'Please try again in a moment.',
+      variant: updated ? 'default' : 'destructive',
     });
+    return Boolean(updated);
   };
 
   const handleAddFeedback = async (itemId:string) => {
@@ -199,6 +227,7 @@ export default function Home() {
                 onAddTask={handleAddTask}
                 onToggleComplete={handleToggleComplete}
                 onDeleteTask={handleDeleteTask}
+                onUpdateTask={handleUpdateTask}
               />
             )}
           </TabsContent>
@@ -224,7 +253,7 @@ export default function Home() {
                 onAddItem={handleAddScratchpad}
                 onDeleteItem={handleDeleteScratchpad}
                 onSendToTasks={handleSendToTasks}
-                editItem = {handleEditScratchpad}
+                onUpdateItem={handleUpdateScratchpad}
               />
             )}
           </TabsContent>

@@ -1,9 +1,12 @@
+import { EmojiPicker } from '@/components/EmojiPicker';
+import { AutoResizeTextarea } from '@/components/ui/auto-resize-textarea';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -16,14 +19,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ScratchpadItem, Task } from '@shared/schema';
-import { format } from 'date-fns';
-import { CalendarIcon, FileText, Plus } from 'lucide-react';
-import { type ChangeEvent, type KeyboardEvent, useRef, useState } from 'react';
-import { EmptyState } from './EmptyState';
-import { ScratchpadCard } from './ScratchpadCard';
-import { AutoResizeTextarea } from '@/components/ui/auto-resize-textarea';
-import { EmojiPicker } from '@/components/EmojiPicker';
 import {
   findActiveShortcode,
   replaceEmojiShortcodes,
@@ -32,17 +27,23 @@ import {
   type EmojiDefinition,
 } from '@/lib/emoji';
 import { cn } from '@/lib/utils';
+import { ScratchpadItem, Task } from '@shared/schema';
+import { format } from 'date-fns';
+import { CalendarIcon, FileText, Plus } from 'lucide-react';
+import { useRef, useState, type ChangeEvent, type KeyboardEvent } from 'react';
+import { EmptyState } from './EmptyState';
+import { ScratchpadCard } from './ScratchpadCard';
 
 interface ScratchpadTabProps {
   items: ScratchpadItem[];
   tasks: Task[];
   onAddItem: (title: string) => void;
   onDeleteItem: (itemId: string) => void;
-  editItem: (itemId: string) => void;
+  onUpdateItem: (itemId: string, title: string) => Promise<boolean> | boolean;
   onSendToTasks: (itemId: string, bucket: 'work' | 'personal', date: string) => void;
 }
 
-export function ScratchpadTab({ items, tasks, onAddItem, onDeleteItem, onSendToTasks,editItem }: ScratchpadTabProps) {
+export function ScratchpadTab({ items, tasks, onAddItem, onDeleteItem, onSendToTasks, onUpdateItem }: ScratchpadTabProps) {
   const [newItemTitle, setNewItemTitle] = useState('');
   const [sendToTasksItem, setSendToTasksItem] = useState<ScratchpadItem | null>(null);
   const [selectedBucket, setSelectedBucket] = useState<'work' | 'personal'>('work');
@@ -58,6 +59,10 @@ export function ScratchpadTab({ items, tasks, onAddItem, onDeleteItem, onSendToT
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(0);
   const [activeShortcode, setActiveShortcode] = useState<{ start: number; end: number; query: string } | null>(null);
   const suggestionsVisible = emojiSuggestions.length > 0;
+  const [editingItem, setEditingItem] = useState<ScratchpadItem | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editError, setEditError] = useState('');
+  const [editSaving, setEditSaving] = useState(false);
 
   // Calculate remaining slots for the selected date (count ALL tasks, not just active)
   const getTasksForDate = (date: Date) => {
@@ -244,6 +249,42 @@ export function ScratchpadTab({ items, tasks, onAddItem, onDeleteItem, onSendToT
     }
   };
 
+  const startEditingItem = (item: ScratchpadItem) => {
+    setEditingItem(item);
+    setEditTitle(item.title);
+    setEditError('');
+  };
+
+  const closeEditingItem = () => {
+    setEditingItem(null);
+    setEditError('');
+  };
+
+  const handleEditSave = async () => {
+    if (!editingItem) return;
+    const normalized = editTitle.trim();
+    if (!normalized) {
+      setEditError('Idea title required');
+      return;
+    }
+
+    try {
+      setEditSaving(true);
+      const success = await onUpdateItem(editingItem.id, normalized);
+      console.log(success);
+      if (success) {
+        closeEditingItem();
+      } else {
+        setEditError('--Unable to update this item. Please try again.');
+      }
+    } catch (error) {
+      console.error(error);
+      setEditError('@@Unable to update this item. Please try again.');
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto px-4 md:px-6 py-8">
       <form onSubmit={handleSubmit} className="mb-8">
@@ -319,7 +360,7 @@ export function ScratchpadTab({ items, tasks, onAddItem, onDeleteItem, onSendToT
                 setSelectedBucket('work');
               }}
               onDelete={onDeleteItem}
-              editTask={editItem}
+              onEdit={startEditingItem}
             />
           ))}
         </div>
@@ -394,6 +435,34 @@ export function ScratchpadTab({ items, tasks, onAddItem, onDeleteItem, onSendToT
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(editingItem)} onOpenChange={(open) => (open ? null : closeEditingItem())}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit note</DialogTitle>
+            <DialogDescription>Update the scratchpad entry below.</DialogDescription>
+          </DialogHeader>
+
+          <AutoResizeTextarea
+            value={editTitle}
+            onChange={(event) => {
+              setEditTitle(event.target.value);
+              setEditError('');
+            }}
+            className={cn('min-h-[80px]', editError && 'border-destructive')}
+          />
+          {editError && <p className="text-sm text-destructive">{editError}</p>}
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={closeEditingItem} disabled={editSaving}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditSave} disabled={editSaving}>
+              {editSaving ? 'Saving...' : 'Save changes'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

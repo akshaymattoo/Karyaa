@@ -10,6 +10,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { Task } from '@shared/schema';
 import { format } from 'date-fns';
@@ -32,9 +40,10 @@ interface TasksTabProps {
   onAddTask: (title: string, bucket: 'work' | 'personal', date: string) => void;
   onToggleComplete: (taskId: string) => void;
   onDeleteTask: (taskId: string) => void;
+  onUpdateTask: (taskId: string, updates: { title: string; bucket: 'work' | 'personal'; date: string }) => Promise<boolean> | boolean;
 }
 
-export function TasksTab({ tasks, onAddTask, onToggleComplete, onDeleteTask }: TasksTabProps) {
+export function TasksTab({ tasks, onAddTask, onToggleComplete, onDeleteTask, onUpdateTask }: TasksTabProps) {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [selectedBucket, setSelectedBucket] = useState<'work' | 'personal'>('work');
   const [selectedDate, setSelectedDate] = useState<Date>(() => {
@@ -55,6 +64,17 @@ export function TasksTab({ tasks, onAddTask, onToggleComplete, onDeleteTask }: T
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(0);
   const [activeShortcode, setActiveShortcode] = useState<{ start: number; end: number; query: string } | null>(null);
   const suggestionsVisible = emojiSuggestions.length > 0;
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editBucket, setEditBucket] = useState<'work' | 'personal'>('work');
+  const [editDate, setEditDate] = useState<Date>(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today;
+  });
+  const [editError, setEditError] = useState('');
+  const [editCalendarOpen, setEditCalendarOpen] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
 
   // Get ALL tasks for the currently selected date (for checking the limit)
   const getTasksForDate = (date: Date) => {
@@ -277,6 +297,66 @@ export function TasksTab({ tasks, onAddTask, onToggleComplete, onDeleteTask }: T
     return todayStr === viewStr;
   };
 
+  const openEditDialog = (task: Task) => {
+    if (task.completed) return;
+    const [year, month, day] = task.date.split('-').map(Number);
+    const date = new Date(year, (month ?? 1) - 1, day ?? 1);
+    date.setHours(0, 0, 0, 0);
+    setEditingTask(task);
+    setEditTitle(task.title);
+    setEditBucket(task.bucket as 'work' | 'personal');
+    setEditDate(date);
+    setEditError('');
+  };
+
+  const closeEditDialog = () => {
+    setEditingTask(null);
+    setEditCalendarOpen(false);
+    setEditError('');
+  };
+
+  const getDateString = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const handleEditSubmit = async () => {
+    if (!editingTask) return;
+    const normalizedTitle = editTitle.trim();
+    if (!normalizedTitle) {
+      setEditError('Task title required');
+      return;
+    }
+
+    const dateString = getDateString(editDate);
+    const tasksOnDate = tasks.filter(task => task.id !== editingTask.id && task.date === dateString);
+    if (tasksOnDate.length >= 8) {
+      setEditError('Task limit reached for this day. Delete a task to move more.');
+      return;
+    }
+
+    try {
+      setEditSaving(true);
+      const success = await onUpdateTask(editingTask.id, {
+        title: normalizedTitle,
+        bucket: editBucket,
+        date: dateString,
+      });
+      if (success) {
+        closeEditDialog();
+      } else {
+        setEditError('Failed to update task. Please try again.');
+      }
+    } catch (error) {
+      console.error(error);
+      setEditError('Failed to update task. Please try again.');
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
   return (
     <div className="max-w-6xl mx-auto px-4 md:px-6 py-8">
       { (taskCount === 8) &&
@@ -458,6 +538,7 @@ export function TasksTab({ tasks, onAddTask, onToggleComplete, onDeleteTask }: T
                         task={task}
                         onToggleComplete={onToggleComplete}
                         onDelete={onDeleteTask}
+                        onEdit={openEditDialog}
                       />
                     ))
                   )}
@@ -478,6 +559,7 @@ export function TasksTab({ tasks, onAddTask, onToggleComplete, onDeleteTask }: T
                         task={task}
                         onToggleComplete={onToggleComplete}
                         onDelete={onDeleteTask}
+                        onEdit={openEditDialog}
                       />
                     ))
                   )}
@@ -494,6 +576,7 @@ export function TasksTab({ tasks, onAddTask, onToggleComplete, onDeleteTask }: T
                     task={task}
                     onToggleComplete={onToggleComplete}
                     onDelete={onDeleteTask}
+                    onEdit={openEditDialog}
                   />
                 ))}
               </div>
@@ -501,6 +584,79 @@ export function TasksTab({ tasks, onAddTask, onToggleComplete, onDeleteTask }: T
           )}
         </div>
       )}
+
+      <Dialog open={Boolean(editingTask)} onOpenChange={(open) => (open ? null : closeEditDialog())}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit task</DialogTitle>
+            <DialogDescription>Update the task details. Completed tasks cannot be edited.</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="edit-task-title">Task title</Label>
+              <AutoResizeTextarea
+                id="edit-task-title"
+                value={editTitle}
+                onChange={(event) => setEditTitle(event.target.value)}
+                className={cn('mt-1 min-h-[40px]', editError && 'border-destructive')}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label>Bucket</Label>
+                <Select value={editBucket} onValueChange={(value: 'work' | 'personal') => setEditBucket(value)}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="work">Work</SelectItem>
+                    <SelectItem value="personal">Personal</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label>Date</Label>
+                <Popover open={editCalendarOpen} onOpenChange={setEditCalendarOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="mt-1 w-full justify-start gap-2">
+                      <CalendarIcon className="h-4 w-4" />
+                      <span className="font-mono text-sm">{format(editDate, 'MMM d, yyyy')}</span>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={editDate}
+                      onSelect={(date) => {
+                        if (date) {
+                          date.setHours(0, 0, 0, 0);
+                          setEditDate(date);
+                          setEditCalendarOpen(false);
+                        }
+                      }}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+
+            {editError && <p className="text-sm text-destructive">{editError}</p>}
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={closeEditDialog} disabled={editSaving}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditSubmit} disabled={editSaving}>
+              {editSaving ? 'Saving...' : 'Save changes'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -4,10 +4,28 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 
-const supabase = createClient(
-  process.env.VITE_SUPABASE_URL || '',
-  process.env.VITE_SUPABASE_ANON_KEY || ''
-);
+const supabaseUrl =
+  process.env.SUPABASE_URL ||
+  process.env.VITE_SUPABASE_URL ||
+  '';
+
+const supabaseServiceKey =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.SUPABASE_SERVICE_KEY ||
+  process.env.VITE_SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.VITE_SUPABASE_ANON_KEY ||
+  '';
+
+if (!supabaseUrl || !supabaseServiceKey) {
+  console.warn('Supabase URL / service key missing. Authenticated routes will fail.');
+}
+
+const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false,
+  },
+});
 
 async function getUserFromRequest(req: any): Promise<string | null> {
   const authHeader = req.headers.authorization;
@@ -136,6 +154,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(item);
     } catch (error) {
       res.status(400).json({ error: 'Failed to create scratchpad item' });
+    }
+  });
+
+  // Update a scratchpad item
+  app.patch('/api/scratchpad/:id', async (req, res) => {
+    try {
+      const userId = await getUserFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const { id } = req.params;
+      const { title } = req.body;
+
+      if (typeof title !== 'string' || !title.trim()) {
+        return res.status(400).json({ error: 'Invalid scratchpad title' });
+      }
+      console.log("----Trying to upate the item", id, userId,title)
+
+      const updatedItem = await storage.updateScratchpadItem(id, userId, { title: title.trim() });
+      console.log("-----Updated item in router",updatedItem);
+      if (!updatedItem) {
+        return res.status(404).json({ error: 'Scratchpad item not found' });
+      }
+
+      res.json(updatedItem);
+    } catch (error) {
+      console.error('Error updating scratchpad item:', error);
+      res.status(400).json({ error: 'Failed to update scratchpad item' });
     }
   });
 
