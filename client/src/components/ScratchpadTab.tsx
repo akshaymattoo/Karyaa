@@ -271,15 +271,14 @@ export function ScratchpadTab({ items, tasks, onAddItem, onDeleteItem, onSendToT
     try {
       setEditSaving(true);
       const success = await onUpdateItem(editingItem.id, normalized);
-      console.log(success);
       if (success) {
         closeEditingItem();
       } else {
-        setEditError('--Unable to update this item. Please try again.');
+        setEditError('Unable to update this item. Please try again.');
       }
     } catch (error) {
       console.error(error);
-      setEditError('@@Unable to update this item. Please try again.');
+      setEditError('Unable to update this item. Please try again.');
     } finally {
       setEditSaving(false);
     }

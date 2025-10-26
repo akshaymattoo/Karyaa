@@ -171,10 +171,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (typeof title !== 'string' || !title.trim()) {
         return res.status(400).json({ error: 'Invalid scratchpad title' });
       }
-      console.log("----Trying to upate the item", id, userId,title)
+       
 
       const updatedItem = await storage.updateScratchpadItem(id, userId, { title: title.trim() });
-      console.log("-----Updated item in router",updatedItem);
+      
       if (!updatedItem) {
         return res.status(404).json({ error: 'Scratchpad item not found' });
       }

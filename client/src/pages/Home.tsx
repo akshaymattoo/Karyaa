@@ -72,7 +72,6 @@ export default function Home() {
 
   const handleUpdateScratchpad = async (itemId: string, title: string): Promise<boolean> => {
     const normalized = title.trim();
-    console.log("normalized--",normalized);
     if (!normalized) {
       toast({
         title: 'Update failed',
@@ -83,7 +82,6 @@ export default function Home() {
     }
 
     const updated = await updateItem(itemId, { title: normalized });
-    console.log('----updated--',updated)
     toast({
       title: updated ? 'Item updated' : 'Unable to update item',
       description: updated ? undefined : 'Please try again in a moment.',

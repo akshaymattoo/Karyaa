@@ -66,7 +66,6 @@ export class DbStorage implements IStorage {
       .where(and(eq(scratchpad.id, id), eq(scratchpad.userId, userId)))
       .returning();
 
-      console.log("--updated item returned ---",updated)
     return updated;
   }
 

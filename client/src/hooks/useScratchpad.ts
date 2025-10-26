@@ -130,10 +130,8 @@ export function useScratchpad() {
         },
         body: JSON.stringify(updates),
       });
-      console.log('response from the API',response)
       if (response.ok) {
         const updatedItem = await response.json();
-        console.log(' --- updatedItem in useScratpad--',updateItem)
         setItems(prev => prev.map(item => (item.id === itemId ? updatedItem : item)));
         return updatedItem;
       }
