@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { ScratchpadItem } from '@shared/schema';
 import { ArrowRight, Trash2 } from 'lucide-react';
+import { LinkifiedText } from '@/components/LinkifiedText';
 
 interface ScratchpadCardProps {
   item: ScratchpadItem;
@@ -30,7 +31,7 @@ export function ScratchpadCard({ item, onSendToTasks, onDelete, onEdit }: Scratc
       }}
     >
       <div className="flex-1 min-w-0">
-        <div className="text-base">{item.title}</div>
+        <LinkifiedText text={item.title} className="text-base" />
       </div>
       <div className="flex items-center gap-2">
         <Button

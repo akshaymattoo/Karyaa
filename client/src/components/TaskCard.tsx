@@ -3,6 +3,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { LinkifiedText } from '@/components/LinkifiedText';
 
 interface TaskCardProps {
   task: Task;
@@ -48,14 +49,13 @@ export function TaskCard({ task, onToggleComplete, onDelete, onEdit }: TaskCardP
         className="mt-0.5"
       />
       <div className="flex-1 min-w-0">
-        <div
+        <LinkifiedText
+          text={task.title}
           className={cn(
-            'text-base font-medium break-words whitespace-pre-wrap',
+            'text-base font-medium',
             task.completed && 'line-through text-muted-foreground'
           )}
-        >
-          {task.title}
-        </div>
+        />
         <div className="flex items-center gap-2 mt-2">
           <Badge
             variant={task.bucket === 'work' ? 'default' : 'secondary'}
