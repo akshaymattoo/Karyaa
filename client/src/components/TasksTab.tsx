@@ -75,6 +75,7 @@ export function TasksTab({ tasks, onAddTask, onToggleComplete, onDeleteTask, onU
   const [editError, setEditError] = useState('');
   const [editCalendarOpen, setEditCalendarOpen] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
+  const [viewCalendarOpen, setViewCalendarOpen] = useState(false);
 
   // Get ALL tasks for the currently selected date (for checking the limit)
   const getTasksForDate = (date: Date) => {
@@ -475,6 +476,32 @@ export function TasksTab({ tasks, onAddTask, onToggleComplete, onDeleteTask, onU
           >
             {isViewingToday() ? 'Today' : format(viewDate, 'MMM d')}
           </Button>
+          <Popover open={viewCalendarOpen} onOpenChange={setViewCalendarOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label="Jump to date"
+                data-testid="button-jump-to-date"
+              >
+                <CalendarIcon className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={viewDate}
+                onSelect={(date) => {
+                  if (!date) return;
+                  const newDate = new Date(date);
+                  newDate.setHours(0, 0, 0, 0);
+                  setViewDate(newDate);
+                  setViewCalendarOpen(false);
+                }}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
           <Button
             variant="outline"
             size="icon"
