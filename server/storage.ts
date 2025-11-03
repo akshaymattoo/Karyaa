@@ -1,4 +1,4 @@
-import { feedback, FeedbackItem, InsertFeedback, scratchpad, tasks, type InsertScratchpad, type InsertTask, type ScratchpadItem, type Task } from '@shared/schema';
+import { feedback, FeedbackItem, InsertFeedback, pushSubscriptions, scratchpad, tasks, type InsertPushSubscription, type InsertScratchpad, type InsertTask, type PushSubscription, type ScratchpadItem, type Task } from '@shared/schema';
 import { and, eq } from 'drizzle-orm';
 import { db } from './db';
 
@@ -17,6 +17,12 @@ export interface IStorage {
 
   // feedback
   createFeedbackItem(item: InsertFeedback): Promise<FeedbackItem>;
+
+  // Push Subscriptions
+  getPushSubscriptions(userId: string): Promise<PushSubscription[]>;
+  createPushSubscription(subscription: InsertPushSubscription): Promise<PushSubscription>;
+  deletePushSubscription(endpoint: string, userId: string): Promise<boolean>;
+  getAllPushSubscriptions(): Promise<PushSubscription[]>;
 }
 
 export class DbStorage implements IStorage {
@@ -82,6 +88,27 @@ export class DbStorage implements IStorage {
       .insert(feedback)
       .values(item).returning();
       return newItem;
+  }
+
+  async getPushSubscriptions(userId: string): Promise<PushSubscription[]> {
+    return await db.select().from(pushSubscriptions).where(eq(pushSubscriptions.userId, userId));
+  }
+
+  async createPushSubscription(subscription: InsertPushSubscription): Promise<PushSubscription> {
+    const [newSubscription] = await db.insert(pushSubscriptions).values(subscription).returning();
+    return newSubscription;
+  }
+
+  async deletePushSubscription(endpoint: string, userId: string): Promise<boolean> {
+    const result = await db
+      .delete(pushSubscriptions)
+      .where(and(eq(pushSubscriptions.endpoint, endpoint), eq(pushSubscriptions.userId, userId)))
+      .returning();
+    return result.length > 0;
+  }
+
+  async getAllPushSubscriptions(): Promise<PushSubscription[]> {
+    return await db.select().from(pushSubscriptions);
   }
 }
 

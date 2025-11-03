@@ -1,8 +1,9 @@
-import { insertFeedbackSchema, insertScratchpadSchema, insertTaskSchema, type Task } from "@shared/schema";
+import { insertFeedbackSchema, insertPushSubscriptionSchema, insertScratchpadSchema, insertTaskSchema, type Task } from "@shared/schema";
 import { createClient } from "@supabase/supabase-js";
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import webpush from "web-push";
 
 const supabaseUrl =
   process.env.SUPABASE_URL ||
@@ -281,6 +282,125 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(item);
     } catch(error){
       res.status(400).json({ error: 'Failed to create feedback item' });
+    }
+  });
+
+  // Get VAPID public key
+  app.get('/api/push/vapid-public-key', (req, res) => {
+    const publicKey = process.env.VAPID_PUBLIC_KEY || '';
+    if (!publicKey) {
+      return res.status(500).json({ error: 'VAPID public key not configured' });
+    }
+    res.json({ publicKey });
+  });
+
+  // Subscribe to push notifications
+  app.post('/api/push/subscribe', async (req, res) => {
+    try {
+      const userId = await getUserFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const { endpoint, keys } = req.body;
+      if (!endpoint || !keys || !keys.p256dh || !keys.auth) {
+        return res.status(400).json({ error: 'Invalid subscription data' });
+      }
+
+      const validatedData = insertPushSubscriptionSchema.parse({
+        userId,
+        endpoint,
+        p256dh: keys.p256dh,
+        auth: keys.auth,
+      });
+
+      const subscription = await storage.createPushSubscription(validatedData);
+      res.json(subscription);
+    } catch (error) {
+      console.error('Error subscribing to push:', error);
+      res.status(400).json({ error: 'Failed to subscribe to push notifications' });
+    }
+  });
+
+  // Unsubscribe from push notifications
+  app.post('/api/push/unsubscribe', async (req, res) => {
+    try {
+      const userId = await getUserFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const { endpoint } = req.body;
+      if (!endpoint) {
+        return res.status(400).json({ error: 'Endpoint required' });
+      }
+
+      const success = await storage.deletePushSubscription(endpoint, userId);
+      res.json({ success });
+    } catch (error) {
+      console.error('Error unsubscribing from push:', error);
+      res.status(500).json({ error: 'Failed to unsubscribe from push notifications' });
+    }
+  });
+
+  // Send push notification (test endpoint)
+  app.post('/api/push/send', async (req, res) => {
+    try {
+      const userId = await getUserFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const { title, body } = req.body;
+      if (!title || !body) {
+        return res.status(400).json({ error: 'Title and body required' });
+      }
+
+      const subscriptions = await storage.getPushSubscriptions(userId);
+      
+      if (subscriptions.length === 0) {
+        return res.status(400).json({ error: 'No push subscriptions found' });
+      }
+
+      const vapidPublicKey = process.env.VAPID_PUBLIC_KEY || '';
+      const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY || '';
+      const vapidEmail = process.env.VAPID_EMAIL || 'mailto:admin@karyaa.app';
+
+      if (!vapidPublicKey || !vapidPrivateKey) {
+        return res.status(500).json({ error: 'VAPID keys not configured' });
+      }
+
+      webpush.setVapidDetails(vapidEmail, vapidPublicKey, vapidPrivateKey);
+
+      const payload = JSON.stringify({ title, body });
+
+      const results = await Promise.allSettled(
+        subscriptions.map(sub =>
+          webpush.sendNotification(
+            {
+              endpoint: sub.endpoint,
+              keys: {
+                p256dh: sub.p256dh,
+                auth: sub.auth,
+              },
+            },
+            payload
+          )
+        )
+      );
+
+      const successful = results.filter(r => r.status === 'fulfilled').length;
+      const failed = results.filter(r => r.status === 'rejected').length;
+
+      res.json({ 
+        success: true, 
+        sent: successful,
+        failed,
+        total: subscriptions.length 
+      });
+    } catch (error) {
+      console.error('Error sending push notification:', error);
+      res.status(500).json({ error: 'Failed to send push notification' });
     }
   });
 
