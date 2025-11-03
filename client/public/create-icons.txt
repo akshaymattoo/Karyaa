@@ -1,0 +1,9 @@
+To create proper PWA icons, you need 192x192 and 512x512 PNG files.
+
+You can:
+1. Create icons using an image editor
+2. Use a PWA icon generator online
+3. For now, copy your existing favicon.svg and rename it to icon-192.png and icon-512.png
+   (browsers will handle SVG gracefully)
+
+For production, use proper PNG icons at the specified sizes.
