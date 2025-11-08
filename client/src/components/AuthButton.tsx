@@ -1,4 +1,5 @@
-import { useAuth } from '@/contexts/AuthContext';
+import { SettingsDialog } from '@/components/SettingsDialog';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -7,15 +8,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useAuth } from '@/contexts/AuthContext';
 import { LogIn, LogOut, Settings } from 'lucide-react';
-import { SettingsDialog } from '@/components/SettingsDialog';
 import { useState } from 'react';
 
 export function AuthButton() {
   const { user, signInWithGoogle, signOut } = useAuth();
   const [settingsOpen, setSettingsOpen] = useState(false);
-
   if (!user) {
     return (
       <Button
@@ -59,10 +58,12 @@ export function AuthButton() {
             <div className="text-xs text-muted-foreground">{user.email}</div>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => setSettingsOpen(true)} data-testid="button-settings" className="gap-2">
-            <Settings className="h-4 w-4" />
-            Settings
-          </DropdownMenuItem>
+          { user.email === 'akshaymattoo@gmail.com' ? (
+            <DropdownMenuItem onClick={() => setSettingsOpen(true)} data-testid="button-settings" className="gap-2">
+              <Settings className="h-4 w-4" />
+              Settings
+            </DropdownMenuItem>) : null
+          }
           <DropdownMenuItem onClick={signOut} data-testid="button-sign-out" className="gap-2">
             <LogOut className="h-4 w-4" />
             Sign out
