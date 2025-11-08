@@ -27,12 +27,16 @@ export function usePushNotifications() {
 
   useEffect(() => {
     const initServiceWorker = async () => {
-      const reg = await registerServiceWorker();
-      setRegistration(reg);
-      
-      if (reg) {
-        const subscription = await reg.pushManager.getSubscription();
-        setIsSubscribed(!!subscription);
+      try {
+        const reg = await registerServiceWorker();
+        setRegistration(reg);
+        
+        if (reg && reg.pushManager) {
+          const subscription = await reg.pushManager.getSubscription();
+          setIsSubscribed(!!subscription);
+        }
+      } catch (error) {
+        console.error('Error initializing service worker:', error);
       }
     };
     initServiceWorker();
@@ -57,7 +61,7 @@ export function usePushNotifications() {
         return false;
       }
 
-      if (!registration) {
+      if (!registration || !registration.pushManager) {
         setError('Service worker not registered');
         setIsLoading(false);
         return false;
@@ -112,7 +116,7 @@ export function usePushNotifications() {
     setError(null);
 
     try {
-      if (!registration) {
+      if (!registration || !registration.pushManager) {
         setError('Service worker not registered');
         setIsLoading(false);
         return false;

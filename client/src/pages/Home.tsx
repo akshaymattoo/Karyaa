@@ -2,7 +2,6 @@ import { AuthButton } from '@/components/AuthButton';
 import { CalendarTab } from '@/components/CalendarTab';
 import { EmptyState } from '@/components/EmptyState';
 import FeedbackModal from '@/components/FeedbackModal';
-import { NotificationSettings } from '@/components/NotificationSettings';
 import { ScratchpadTab } from '@/components/ScratchpadTab';
 import { TasksTab } from '@/components/TasksTab';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -12,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useFeedback } from '@/hooks/useFeedback';
 import { useScratchpad } from '@/hooks/useScratchpad';
 import { useTasks } from '@/hooks/useTasks';
-import { Calendar, CheckCircle2, FileText, Lock, NotebookPenIcon, Settings } from 'lucide-react';
+import { Calendar, CheckCircle2, FileText, Lock, NotebookPenIcon } from 'lucide-react';
 import { useState } from 'react';
 
 export default function Home() {
@@ -210,37 +209,6 @@ export default function Home() {
                       Calendar
                     </TabsTrigger>
                   )}
-
-                  {!user ? (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="inline-flex">
-                          <TabsTrigger
-                            value="settings"
-                            className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent"
-                            disabled
-                            data-testid="tab-settings"
-                          >
-                            <Settings className="h-4 w-4 mr-2" />
-                            Settings
-                            <Lock className="h-3 w-3 ml-2" />
-                          </TabsTrigger>
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom">
-                        Sign in to access settings
-                      </TooltipContent>
-                    </Tooltip>
-                  ) : (
-                    <TabsTrigger
-                      value="settings"
-                      className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent"
-                      data-testid="tab-settings"
-                    >
-                      <Settings className="h-4 w-4 mr-2" />
-                      Settings
-                    </TabsTrigger>
-                  )}
                 </TabsList>
               </TooltipProvider>
             </div>
@@ -308,25 +276,6 @@ export default function Home() {
                 onToggleComplete={handleToggleComplete}
                 onDeleteTask={handleDeleteTask}
               />
-            )}
-          </TabsContent>
-
-          <TabsContent value="settings" className="mt-0">
-            {!user ? (
-              <EmptyState
-                icon={Lock}
-                title="Sign in to access settings"
-                description="Manage notifications and preferences. Available with a free Google account."
-                actionLabel="Sign in with Google"
-                onAction={signInWithGoogle}
-                hoverTitle="Sign in to access settings"
-              />
-            ) : (
-              <div className="max-w-6xl mx-auto px-4 md:px-6 py-8">
-                <div className="max-w-2xl">
-                  <NotificationSettings />
-                </div>
-              </div>
             )}
           </TabsContent>
         </Tabs>
