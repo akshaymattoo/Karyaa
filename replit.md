@@ -98,10 +98,11 @@ See `PWA_SETUP.md` for detailed setup instructions.
 - Test notification button to verify setup
 - Permission status display
 - Daily reminder settings
-  - Set preferred notification time (default: 5:00 PM)
+  - Set preferred notification time in your local timezone (default: 5:00 PM)
+  - Times automatically convert to UTC for storage
   - Enable/disable daily reminders
   - Automatically sends notification if incomplete tasks exist at the set time
-  - Note: Times are in server timezone (typically UTC on Replit)
+  - Displays your current timezone for reference
 
 ### Authentication
 - Google Sign-In via Supabase Auth
