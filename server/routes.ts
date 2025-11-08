@@ -1,4 +1,4 @@
-import { insertFeedbackSchema, insertPushSubscriptionSchema, insertScratchpadSchema, insertTaskSchema, type Task } from "@shared/schema";
+import { insertFeedbackSchema, insertPushSubscriptionSchema, insertScratchpadSchema, insertTaskSchema, insertUserSettingsSchema, type Task } from "@shared/schema";
 import { createClient } from "@supabase/supabase-js";
 import type { Express } from "express";
 import { createServer, type Server } from "http";
@@ -401,6 +401,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error sending push notification:', error);
       res.status(500).json({ error: 'Failed to send push notification' });
+    }
+  });
+
+  // Get user settings
+  app.get('/api/settings', async (req, res) => {
+    try {
+      const userId = await getUserFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      let settings = await storage.getUserSettings(userId);
+      
+      if (!settings) {
+        settings = await storage.createOrUpdateUserSettings(userId, {});
+      }
+
+      res.json(settings);
+    } catch (error) {
+      console.error('Error fetching user settings:', error);
+      res.status(500).json({ error: 'Failed to fetch user settings' });
+    }
+  });
+
+  // Update user settings
+  app.patch('/api/settings', async (req, res) => {
+    try {
+      const userId = await getUserFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const { reminderTime, reminderEnabled } = req.body;
+      
+      const updatedSettings = await storage.createOrUpdateUserSettings(userId, {
+        reminderTime,
+        reminderEnabled,
+      });
+
+      res.json(updatedSettings);
+    } catch (error) {
+      console.error('Error updating user settings:', error);
+      res.status(400).json({ error: 'Failed to update user settings' });
     }
   });
 

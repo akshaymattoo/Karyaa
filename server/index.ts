@@ -1,6 +1,7 @@
 import express, { NextFunction, type Request, Response } from "express";
 import { registerRoutes } from "./routes";
 import { log, serveStatic, setupVite } from "./vite";
+import { startNotificationScheduler } from "./notificationScheduler";
 
 const app = express();
 app.use(express.json());
@@ -67,5 +68,6 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving application port ${port}`);
+    startNotificationScheduler();
   });
 })();
