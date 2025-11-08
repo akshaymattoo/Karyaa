@@ -12,6 +12,33 @@ import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useState, useEffect } from 'react';
 import type { UserSettings } from '@shared/schema';
 
+// Convert UTC time (HH:mm) to local time (HH:mm)
+function utcToLocalTime(utcTime: string): string {
+  const [hours, minutes] = utcTime.split(':').map(Number);
+  const utcDate = new Date();
+  utcDate.setUTCHours(hours, minutes, 0, 0);
+  
+  const localHours = utcDate.getHours().toString().padStart(2, '0');
+  const localMinutes = utcDate.getMinutes().toString().padStart(2, '0');
+  return `${localHours}:${localMinutes}`;
+}
+
+// Convert local time (HH:mm) to UTC time (HH:mm)
+function localToUtcTime(localTime: string): string {
+  const [hours, minutes] = localTime.split(':').map(Number);
+  const localDate = new Date();
+  localDate.setHours(hours, minutes, 0, 0);
+  
+  const utcHours = localDate.getUTCHours().toString().padStart(2, '0');
+  const utcMinutes = localDate.getUTCMinutes().toString().padStart(2, '0');
+  return `${utcHours}:${utcMinutes}`;
+}
+
+// Get user's timezone as a readable string
+function getUserTimezone(): string {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone;
+}
+
 export function NotificationSettings() {
   const { user } = useAuth();
   const { 
@@ -27,6 +54,7 @@ export function NotificationSettings() {
   
   const [reminderTime, setReminderTime] = useState('17:00');
   const [reminderEnabled, setReminderEnabled] = useState(true);
+  const userTimezone = getUserTimezone();
 
   const { data: settings, isLoading: settingsLoading } = useQuery<UserSettings>({
     queryKey: ['/api/settings'],
@@ -35,7 +63,8 @@ export function NotificationSettings() {
 
   useEffect(() => {
     if (settings) {
-      setReminderTime(settings.reminderTime);
+      // Convert UTC time from server to local time for display
+      setReminderTime(utcToLocalTime(settings.reminderTime));
       setReminderEnabled(settings.reminderEnabled);
     }
   }, [settings]);
@@ -262,7 +291,11 @@ export function NotificationSettings() {
               />
               <Button
                 size="sm"
-                onClick={() => updateSettingsMutation.mutate({ reminderTime })}
+                onClick={() => {
+                  // Convert local time to UTC before sending to server
+                  const utcTime = localToUtcTime(reminderTime);
+                  updateSettingsMutation.mutate({ reminderTime: utcTime });
+                }}
                 disabled={settingsLoading || updateSettingsMutation.isPending || !reminderEnabled}
                 data-testid="button-save-reminder-time"
               >
@@ -275,6 +308,9 @@ export function NotificationSettings() {
             </div>
             <p className="text-xs text-muted-foreground">
               You'll receive a notification at this time if you have incomplete tasks for the day
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Your timezone: {userTimezone}
             </p>
           </div>
         </CardContent>
