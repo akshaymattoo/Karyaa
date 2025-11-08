@@ -66,13 +66,17 @@ async function sendReminderToUser(userId: string): Promise<boolean> {
     );
 
     const successful = results.filter(r => r.status === 'fulfilled').length;
-    console.log(`[Scheduler] Sent reminder to user ${userId}: ${successful}/${subscriptions.length} subscriptions`);
     
-    await storage.createOrUpdateUserSettings(userId, {
-      lastReminderSent: new Date(),
-    });
-    
-    return successful > 0;
+    if (successful > 0) {
+      console.log(`[Scheduler] Sent reminder to user ${userId}: ${successful}/${subscriptions.length} subscriptions`);
+      await storage.createOrUpdateUserSettings(userId, {
+        lastReminderSent: new Date(),
+      });
+      return true;
+    } else {
+      console.warn(`[Scheduler] Failed to send reminder to user ${userId}: 0/${subscriptions.length} subscriptions succeeded`);
+      return false;
+    }
   } catch (error) {
     console.error(`[Scheduler] Error sending reminder to user ${userId}:`, error);
     return false;

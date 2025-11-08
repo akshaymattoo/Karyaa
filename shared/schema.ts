@@ -1,11 +1,11 @@
 import { sql } from "drizzle-orm";
-import { boolean, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
+import { boolean, pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 export const tasks = pgTable("tasks", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull(),
+  userId: uuid("user_id").notNull(),
   title: text("title").notNull(),
   bucket: text("bucket").notNull(), // 'work' or 'personal'
   date: text("date").notNull(), // ISO date string
@@ -16,9 +16,10 @@ export const tasks = pgTable("tasks", {
 
 export const scratchpad = pgTable("scratchpad", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull(),
+  userId: uuid("user_id").notNull(),
   title: text("title").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export const feedback = pgTable("feedback", {
@@ -55,6 +56,7 @@ export const insertTaskSchema = createInsertSchema(tasks).omit({
 export const insertScratchpadSchema = createInsertSchema(scratchpad).omit({
   id: true,
   createdAt: true,
+  updatedAt: true,
 });
 
 export const insertFeedbackSchema = createInsertSchema(feedback).omit({

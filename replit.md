@@ -123,10 +123,13 @@ See `PWA_SETUP.md` for detailed setup instructions.
 ## Recent Changes
 - 2025-11-08: Added daily reminder notification system
   - Created user_settings table for storing notification preferences
+  - Added lastReminderSent timestamp to prevent duplicate reminders on server restarts
   - Implemented scheduled task that checks every minute for users needing reminders
-  - Added API endpoints for managing reminder time preferences
+  - Database-backed duplicate prevention ensures users receive at most one reminder per day
+  - Added API endpoints for managing reminder time preferences with validation
   - Updated Settings UI with daily reminder time picker and enable/disable toggle
   - Reminders sent only if user has incomplete tasks for the day
+  - Only updates lastReminderSent timestamp when at least one push notification succeeds
 - 2025-11-03: Converted to Progressive Web App (PWA)
   - Added manifest.json for installability
   - Implemented service worker with offline support
