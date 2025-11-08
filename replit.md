@@ -24,6 +24,7 @@ A beautiful React + TypeScript Progressive Web App (PWA) with smart task managem
 - `tasks` table: id, userId, title, bucket (work/personal), date, completed, createdAt, updatedAt
 - `scratchpad` table: id, userId, title, createdAt
 - `push_subscriptions` table: id, userId, endpoint, p256dh, auth, createdAt
+- `user_settings` table: id, userId, reminderTime, reminderEnabled, createdAt, updatedAt
 
 ## Setup Instructions
 
@@ -96,6 +97,11 @@ See `PWA_SETUP.md` for detailed setup instructions.
 - Enable/disable notifications with one click
 - Test notification button to verify setup
 - Permission status display
+- Daily reminder settings
+  - Set preferred notification time (default: 5:00 PM)
+  - Enable/disable daily reminders
+  - Automatically sends notification if incomplete tasks exist at the set time
+  - Note: Times are in server timezone (typically UTC on Replit)
 
 ### Authentication
 - Google Sign-In via Supabase Auth
@@ -115,6 +121,12 @@ See `PWA_SETUP.md` for detailed setup instructions.
 - Responsive design with mobile-first approach
 
 ## Recent Changes
+- 2025-11-08: Added daily reminder notification system
+  - Created user_settings table for storing notification preferences
+  - Implemented scheduled task that checks every minute for users needing reminders
+  - Added API endpoints for managing reminder time preferences
+  - Updated Settings UI with daily reminder time picker and enable/disable toggle
+  - Reminders sent only if user has incomplete tasks for the day
 - 2025-11-03: Converted to Progressive Web App (PWA)
   - Added manifest.json for installability
   - Implemented service worker with offline support

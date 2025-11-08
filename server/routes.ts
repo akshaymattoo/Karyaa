@@ -435,10 +435,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { reminderTime, reminderEnabled } = req.body;
       
-      const updatedSettings = await storage.createOrUpdateUserSettings(userId, {
-        reminderTime,
-        reminderEnabled,
-      });
+      const updates: Partial<{ reminderTime: string; reminderEnabled: boolean }> = {};
+      
+      if (reminderTime !== undefined) {
+        if (typeof reminderTime !== 'string' || !/^([01]\d|2[0-3]):([0-5]\d)$/.test(reminderTime)) {
+          return res.status(400).json({ error: 'Invalid reminder time format. Use HH:mm (24-hour format)' });
+        }
+        updates.reminderTime = reminderTime;
+      }
+      
+      if (reminderEnabled !== undefined) {
+        if (typeof reminderEnabled !== 'boolean') {
+          return res.status(400).json({ error: 'reminderEnabled must be a boolean' });
+        }
+        updates.reminderEnabled = reminderEnabled;
+      }
+      
+      const updatedSettings = await storage.createOrUpdateUserSettings(userId, updates);
 
       res.json(updatedSettings);
     } catch (error) {

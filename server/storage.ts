@@ -26,7 +26,7 @@ export interface IStorage {
 
   // User Settings
   getUserSettings(userId: string): Promise<UserSettings | undefined>;
-  createOrUpdateUserSettings(userId: string, settings: Partial<InsertUserSettings>): Promise<UserSettings>;
+  createOrUpdateUserSettings(userId: string, settings: Partial<InsertUserSettings> & { lastReminderSent?: Date }): Promise<UserSettings>;
   getAllUsersWithSettings(): Promise<UserSettings[]>;
 }
 
@@ -121,7 +121,7 @@ export class DbStorage implements IStorage {
     return settings;
   }
 
-  async createOrUpdateUserSettings(userId: string, settings: Partial<InsertUserSettings>): Promise<UserSettings> {
+  async createOrUpdateUserSettings(userId: string, settings: Partial<InsertUserSettings> & { lastReminderSent?: Date }): Promise<UserSettings> {
     const existing = await this.getUserSettings(userId);
     
     if (existing) {

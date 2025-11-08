@@ -41,6 +41,7 @@ export const userSettings = pgTable("user_settings", {
   userId: varchar("user_id").notNull().unique(),
   reminderTime: text("reminder_time").notNull().default("17:00"), // 24-hour format HH:mm
   reminderEnabled: boolean("reminder_enabled").notNull().default(true),
+  lastReminderSent: timestamp("last_reminder_sent"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

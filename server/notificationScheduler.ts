@@ -3,11 +3,13 @@ import webpush from 'web-push';
 
 interface NotificationCheckState {
   lastCheckedDate: string;
+  lastCheckedMinute: string;
   notifiedUsers: Set<string>;
 }
 
 const state: NotificationCheckState = {
   lastCheckedDate: new Date().toISOString().split('T')[0],
+  lastCheckedMinute: '',
   notifiedUsers: new Set(),
 };
 
@@ -35,7 +37,7 @@ async function sendReminderToUser(userId: string): Promise<boolean> {
     const vapidEmail = process.env.VAPID_EMAIL || 'mailto:admin@karyaa.app';
 
     if (!vapidPublicKey || !vapidPrivateKey) {
-      console.warn('VAPID keys not configured. Skipping notification send.');
+      console.warn('[Scheduler] VAPID keys not configured. Skipping notification send.');
       return false;
     }
 
@@ -64,11 +66,15 @@ async function sendReminderToUser(userId: string): Promise<boolean> {
     );
 
     const successful = results.filter(r => r.status === 'fulfilled').length;
-    console.log(`Sent reminder to user ${userId}: ${successful}/${subscriptions.length} subscriptions`);
+    console.log(`[Scheduler] Sent reminder to user ${userId}: ${successful}/${subscriptions.length} subscriptions`);
+    
+    await storage.createOrUpdateUserSettings(userId, {
+      lastReminderSent: new Date(),
+    });
     
     return successful > 0;
   } catch (error) {
-    console.error(`Error sending reminder to user ${userId}:`, error);
+    console.error(`[Scheduler] Error sending reminder to user ${userId}:`, error);
     return false;
   }
 }
@@ -82,40 +88,63 @@ function getCurrentTimeInHHMM(): string {
 
 async function checkAndSendReminders(): Promise<void> {
   try {
-    const currentDate = new Date().toISOString().split('T')[0];
-    
-    if (currentDate !== state.lastCheckedDate) {
-      state.lastCheckedDate = currentDate;
-      state.notifiedUsers.clear();
-    }
-
+    const now = new Date();
+    const currentDate = now.toISOString().split('T')[0];
     const currentTime = getCurrentTimeInHHMM();
     
+    if (currentDate !== state.lastCheckedDate) {
+      console.log(`[Scheduler] New day detected: ${currentDate}`);
+      state.lastCheckedDate = currentDate;
+      state.notifiedUsers.clear();
+      state.lastCheckedMinute = '';
+    }
+
+    if (state.lastCheckedMinute === currentTime) {
+      return;
+    }
+    
+    state.lastCheckedMinute = currentTime;
+    
     const allSettings = await storage.getAllUsersWithSettings();
+    
+    let scheduledCount = 0;
+    let sentCount = 0;
     
     for (const userSetting of allSettings) {
       if (!userSetting.reminderEnabled) {
         continue;
       }
 
-      if (state.notifiedUsers.has(userSetting.userId)) {
+      if (userSetting.reminderTime !== currentTime) {
         continue;
       }
 
-      if (userSetting.reminderTime === currentTime) {
-        const sent = await sendReminderToUser(userSetting.userId);
-        if (sent) {
-          state.notifiedUsers.add(userSetting.userId);
+      if (userSetting.lastReminderSent) {
+        const lastSentDate = new Date(userSetting.lastReminderSent).toISOString().split('T')[0];
+        if (lastSentDate === currentDate) {
+          continue;
         }
       }
+
+      scheduledCount++;
+      const sent = await sendReminderToUser(userSetting.userId);
+      if (sent) {
+        state.notifiedUsers.add(userSetting.userId);
+        sentCount++;
+      }
+    }
+    
+    if (scheduledCount > 0) {
+      console.log(`[Scheduler] ${currentTime}: Sent ${sentCount}/${scheduledCount} scheduled reminders`);
     }
   } catch (error) {
-    console.error('Error in notification scheduler:', error);
+    console.error('[Scheduler] Error in notification scheduler:', error);
   }
 }
 
 export function startNotificationScheduler(): void {
-  console.log('Starting notification scheduler...');
+  console.log('[Scheduler] Starting notification scheduler (checks every minute)...');
+  console.log('[Scheduler] Note: Reminders use server timezone. Ensure server timezone matches target audience.');
   
   setInterval(checkAndSendReminders, 60 * 1000);
   
