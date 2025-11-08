@@ -121,6 +121,11 @@ See `PWA_SETUP.md` for detailed setup instructions.
 - Responsive design with mobile-first approach
 
 ## Recent Changes
+- 2025-11-08: UI/UX improvements and bug fixes
+  - Moved Settings from separate tab to user profile dropdown menu
+  - Created SettingsDialog component for better UX
+  - Fixed push notification error with proper null checks for service worker registration
+  - Settings now accessible via avatar dropdown: Avatar → Settings
 - 2025-11-08: Added daily reminder notification system
   - Created user_settings table for storing notification preferences
   - Added lastReminderSent timestamp to prevent duplicate reminders on server restarts
