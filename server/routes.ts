@@ -1,8 +1,9 @@
-import { insertFeedbackSchema, insertScratchpadSchema, insertTaskSchema, type Task } from "@shared/schema";
+import { insertFeedbackSchema, insertPushSubscriptionSchema, insertScratchpadSchema, insertTaskSchema, insertUserSettingsSchema, type Task } from "@shared/schema";
 import { createClient } from "@supabase/supabase-js";
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import webpush from "web-push";
 
 const supabaseUrl =
   process.env.SUPABASE_URL ||
@@ -281,6 +282,181 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(item);
     } catch(error){
       res.status(400).json({ error: 'Failed to create feedback item' });
+    }
+  });
+
+  // Get VAPID public key
+  app.get('/api/push/vapid-public-key', (req, res) => {
+    const publicKey = process.env.VAPID_PUBLIC_KEY || '';
+    if (!publicKey) {
+      return res.status(500).json({ error: 'VAPID public key not configured' });
+    }
+    res.json({ publicKey });
+  });
+
+  // Subscribe to push notifications
+  app.post('/api/push/subscribe', async (req, res) => {
+    try {
+      const userId = await getUserFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const { endpoint, keys } = req.body;
+      if (!endpoint || !keys || !keys.p256dh || !keys.auth) {
+        return res.status(400).json({ error: 'Invalid subscription data' });
+      }
+
+      const validatedData = insertPushSubscriptionSchema.parse({
+        userId,
+        endpoint,
+        p256dh: keys.p256dh,
+        auth: keys.auth,
+      });
+
+      const subscription = await storage.createPushSubscription(validatedData);
+      res.json(subscription);
+    } catch (error) {
+      console.error('Error subscribing to push:', error);
+      res.status(400).json({ error: 'Failed to subscribe to push notifications' });
+    }
+  });
+
+  // Unsubscribe from push notifications
+  app.post('/api/push/unsubscribe', async (req, res) => {
+    try {
+      const userId = await getUserFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const { endpoint } = req.body;
+      if (!endpoint) {
+        return res.status(400).json({ error: 'Endpoint required' });
+      }
+
+      const success = await storage.deletePushSubscription(endpoint, userId);
+      res.json({ success });
+    } catch (error) {
+      console.error('Error unsubscribing from push:', error);
+      res.status(500).json({ error: 'Failed to unsubscribe from push notifications' });
+    }
+  });
+
+  // Send push notification (test endpoint)
+  app.post('/api/push/send', async (req, res) => {
+    try {
+      const userId = await getUserFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const { title, body } = req.body;
+      if (!title || !body) {
+        return res.status(400).json({ error: 'Title and body required' });
+      }
+
+      const subscriptions = await storage.getPushSubscriptions(userId);
+      
+      if (subscriptions.length === 0) {
+        return res.status(400).json({ error: 'No push subscriptions found' });
+      }
+
+      const vapidPublicKey = process.env.VAPID_PUBLIC_KEY || '';
+      const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY || '';
+      const vapidEmail = process.env.VAPID_EMAIL || 'mailto:admin@karyaa.app';
+
+      if (!vapidPublicKey || !vapidPrivateKey) {
+        return res.status(500).json({ error: 'VAPID keys not configured' });
+      }
+
+      webpush.setVapidDetails(vapidEmail, vapidPublicKey, vapidPrivateKey);
+
+      const payload = JSON.stringify({ title, body });
+
+      const results = await Promise.allSettled(
+        subscriptions.map(sub =>
+          webpush.sendNotification(
+            {
+              endpoint: sub.endpoint,
+              keys: {
+                p256dh: sub.p256dh,
+                auth: sub.auth,
+              },
+            },
+            payload
+          )
+        )
+      );
+
+      const successful = results.filter(r => r.status === 'fulfilled').length;
+      const failed = results.filter(r => r.status === 'rejected').length;
+
+      res.json({ 
+        success: true, 
+        sent: successful,
+        failed,
+        total: subscriptions.length 
+      });
+    } catch (error) {
+      console.error('Error sending push notification:', error);
+      res.status(500).json({ error: 'Failed to send push notification' });
+    }
+  });
+
+  // Get user settings
+  app.get('/api/settings', async (req, res) => {
+    try {
+      const userId = await getUserFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      let settings = await storage.getUserSettings(userId);
+      
+      if (!settings) {
+        settings = await storage.createOrUpdateUserSettings(userId, {});
+      }
+
+      res.json(settings);
+    } catch (error) {
+      console.error('Error fetching user settings:', error);
+      res.status(500).json({ error: 'Failed to fetch user settings' });
+    }
+  });
+
+  // Update user settings
+  app.patch('/api/settings', async (req, res) => {
+    try {
+      const userId = await getUserFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const { reminderTime, reminderEnabled } = req.body;
+      
+      const updates: Partial<{ reminderTime: string; reminderEnabled: boolean }> = {};
+      
+      if (reminderTime !== undefined) {
+        if (typeof reminderTime !== 'string' || !/^([01]\d|2[0-3]):([0-5]\d)$/.test(reminderTime)) {
+          return res.status(400).json({ error: 'Invalid reminder time format. Use HH:mm (24-hour format)' });
+        }
+        updates.reminderTime = reminderTime;
+      }
+      
+      if (reminderEnabled !== undefined) {
+        if (typeof reminderEnabled !== 'boolean') {
+          return res.status(400).json({ error: 'reminderEnabled must be a boolean' });
+        }
+        updates.reminderEnabled = reminderEnabled;
+      }
+      
+      const updatedSettings = await storage.createOrUpdateUserSettings(userId, updates);
+
+      res.json(updatedSettings);
+    } catch (error) {
+      console.error('Error updating user settings:', error);
+      res.status(400).json({ error: 'Failed to update user settings' });
     }
   });
 

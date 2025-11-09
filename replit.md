@@ -1,7 +1,7 @@
-# TaskFlow - To-Do App with Feature Gating
+# Karyaa - Progressive Web App To-Do
 
 ## Overview
-A beautiful React + TypeScript to-do application with smart task management, Google authentication via Supabase, and feature gating. Users can manage up to 8 tasks per day across Work and Personal buckets without login. Sign in unlocks Scratchpad (infinite inbox) and Calendar views.
+A beautiful React + TypeScript Progressive Web App (PWA) with smart task management, Google authentication via Supabase, and push notifications. Users can manage up to 8 tasks per day across Work and Personal buckets without login. Sign in unlocks Scratchpad (infinite inbox), Calendar views, and push notification settings.
 
 ## Project Architecture
 
@@ -10,7 +10,9 @@ A beautiful React + TypeScript to-do application with smart task management, Goo
 - **Tailwind CSS** with purple and white design system
 - **Supabase Auth** for Google OAuth
 - **Dual-mode persistence**: localStorage for anonymous users, Supabase for authenticated users
-- **Three tabs**: Tasks (always available), Scratchpad (login-gated), Calendar (login-gated)
+- **Four tabs**: Tasks (always available), Scratchpad (login-gated), Calendar (login-gated), Settings (login-gated)
+- **PWA Support**: Service worker for offline functionality and installability
+- **Push Notifications**: Web Push API with VAPID authentication
 
 ### Backend
 - **Express.js** API server
@@ -19,8 +21,10 @@ A beautiful React + TypeScript to-do application with smart task management, Goo
 - **Automatic data migration** from localStorage to cloud on first login
 
 ### Database Schema
-- `tasks` table: id, userId, title, bucket (work/personal), date, completed, createdAt
+- `tasks` table: id, userId, title, bucket (work/personal), date, completed, createdAt, updatedAt
 - `scratchpad` table: id, userId, title, createdAt
+- `push_subscriptions` table: id, userId, endpoint, p256dh, auth, createdAt
+- `user_settings` table: id, userId, reminderTime, reminderEnabled, createdAt, updatedAt
 
 ## Setup Instructions
 
@@ -45,11 +49,23 @@ You need to set up a Supabase project and configure Google OAuth:
    - Set as `DATABASE_URL`
 
 ### 2. Environment Variables
-The following secrets are required (already configured in Replit Secrets):
+The following secrets are required:
 - `DATABASE_URL` - Supabase PostgreSQL connection string
 - `VITE_SUPABASE_URL` - Supabase project URL
 - `VITE_SUPABASE_ANON_KEY` - Supabase anonymous key
 - `SUPABASE_SERVICE_ROLE_KEY` - Supabase service key for secure server-side auth verification
+
+### 3. Push Notifications Setup (Optional)
+To enable push notifications, generate VAPID keys and add them to Replit Secrets:
+```bash
+npx web-push generate-vapid-keys
+```
+Then add these secrets:
+- `VAPID_PUBLIC_KEY` - VAPID public key
+- `VAPID_PRIVATE_KEY` - VAPID private key
+- `VAPID_EMAIL` - Contact email (e.g., mailto:admin@karyaa.app)
+
+See `PWA_SETUP.md` for detailed setup instructions.
 
 ## Features
 
@@ -76,10 +92,28 @@ The following secrets are required (already configured in Replit Secrets):
 - Click day to view/edit/complete/delete tasks
 - Side panel with task management
 
+### Settings Tab (Login Required)
+- Push notification management
+- Enable/disable notifications with one click
+- Test notification button to verify setup
+- Permission status display
+- Daily reminder settings
+  - Set preferred notification time in your local timezone (default: 5:00 PM)
+  - Times automatically convert to UTC for storage
+  - Enable/disable daily reminders
+  - Automatically sends notification if incomplete tasks exist at the set time
+  - Displays your current timezone for reference
+
 ### Authentication
 - Google Sign-In via Supabase Auth
 - Automatic localStorage migration on first login
 - User dropdown with sign out option
+
+### PWA Features
+- **Offline Support**: Network-first caching strategy with offline fallback
+- **Installable**: Add to home screen on mobile and desktop
+- **Push Notifications**: Receive notifications even when app is closed
+- **Service Worker**: Automatic background sync and caching
 
 ## User Preferences
 - Color scheme: Purple and white (Linear-inspired design)
@@ -88,6 +122,27 @@ The following secrets are required (already configured in Replit Secrets):
 - Responsive design with mobile-first approach
 
 ## Recent Changes
+- 2025-11-08: UI/UX improvements and bug fixes
+  - Moved Settings from separate tab to user profile dropdown menu
+  - Created SettingsDialog component for better UX
+  - Fixed push notification error with proper null checks for service worker registration
+  - Settings now accessible via avatar dropdown: Avatar → Settings
+- 2025-11-08: Added daily reminder notification system
+  - Created user_settings table for storing notification preferences
+  - Added lastReminderSent timestamp to prevent duplicate reminders on server restarts
+  - Implemented scheduled task that checks every minute for users needing reminders
+  - Database-backed duplicate prevention ensures users receive at most one reminder per day
+  - Added API endpoints for managing reminder time preferences with validation
+  - Updated Settings UI with daily reminder time picker and enable/disable toggle
+  - Reminders sent only if user has incomplete tasks for the day
+  - Only updates lastReminderSent timestamp when at least one push notification succeeds
+- 2025-11-03: Converted to Progressive Web App (PWA)
+  - Added manifest.json for installability
+  - Implemented service worker with offline support
+  - Added push notification system with VAPID authentication
+  - Created Settings tab for notification management
+  - Added push_subscriptions table to database
+  - Implemented notification API endpoints
 - 2025-10-04: Changed task limit from 8 tasks total to 8 tasks per day
   - Backend validation now checks limit per date
   - Frontend task counter shows remaining slots for selected date

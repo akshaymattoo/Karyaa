@@ -1,4 +1,4 @@
-import { feedback, FeedbackItem, InsertFeedback, scratchpad, tasks, type InsertScratchpad, type InsertTask, type ScratchpadItem, type Task } from '@shared/schema';
+import { feedback, FeedbackItem, InsertFeedback, pushSubscriptions, scratchpad, tasks, userSettings, type InsertPushSubscription, type InsertScratchpad, type InsertTask, type InsertUserSettings, type PushSubscription, type ScratchpadItem, type Task, type UserSettings } from '@shared/schema';
 import { and, eq } from 'drizzle-orm';
 import { db } from './db';
 
@@ -17,6 +17,17 @@ export interface IStorage {
 
   // feedback
   createFeedbackItem(item: InsertFeedback): Promise<FeedbackItem>;
+
+  // Push Subscriptions
+  getPushSubscriptions(userId: string): Promise<PushSubscription[]>;
+  createPushSubscription(subscription: InsertPushSubscription): Promise<PushSubscription>;
+  deletePushSubscription(endpoint: string, userId: string): Promise<boolean>;
+  getAllPushSubscriptions(): Promise<PushSubscription[]>;
+
+  // User Settings
+  getUserSettings(userId: string): Promise<UserSettings | undefined>;
+  createOrUpdateUserSettings(userId: string, settings: Partial<InsertUserSettings> & { lastReminderSent?: Date }): Promise<UserSettings>;
+  getAllUsersWithSettings(): Promise<UserSettings[]>;
 }
 
 export class DbStorage implements IStorage {
@@ -82,6 +93,55 @@ export class DbStorage implements IStorage {
       .insert(feedback)
       .values(item).returning();
       return newItem;
+  }
+
+  async getPushSubscriptions(userId: string): Promise<PushSubscription[]> {
+    return await db.select().from(pushSubscriptions).where(eq(pushSubscriptions.userId, userId));
+  }
+
+  async createPushSubscription(subscription: InsertPushSubscription): Promise<PushSubscription> {
+    const [newSubscription] = await db.insert(pushSubscriptions).values(subscription).returning();
+    return newSubscription;
+  }
+
+  async deletePushSubscription(endpoint: string, userId: string): Promise<boolean> {
+    const result = await db
+      .delete(pushSubscriptions)
+      .where(and(eq(pushSubscriptions.endpoint, endpoint), eq(pushSubscriptions.userId, userId)))
+      .returning();
+    return result.length > 0;
+  }
+
+  async getAllPushSubscriptions(): Promise<PushSubscription[]> {
+    return await db.select().from(pushSubscriptions);
+  }
+
+  async getUserSettings(userId: string): Promise<UserSettings | undefined> {
+    const [settings] = await db.select().from(userSettings).where(eq(userSettings.userId, userId));
+    return settings;
+  }
+
+  async createOrUpdateUserSettings(userId: string, settings: Partial<InsertUserSettings> & { lastReminderSent?: Date }): Promise<UserSettings> {
+    const existing = await this.getUserSettings(userId);
+    
+    if (existing) {
+      const [updated] = await db
+        .update(userSettings)
+        .set({ ...settings, updatedAt: new Date() })
+        .where(eq(userSettings.userId, userId))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db
+        .insert(userSettings)
+        .values({ userId, ...settings })
+        .returning();
+      return created;
+    }
+  }
+
+  async getAllUsersWithSettings(): Promise<UserSettings[]> {
+    return await db.select().from(userSettings);
   }
 }
 
