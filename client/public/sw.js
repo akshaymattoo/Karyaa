@@ -1,5 +1,5 @@
-const CACHE_NAME = 'karyaa-v1';
-const RUNTIME_CACHE = 'karyaa-runtime-v1';
+const CACHE_NAME = 'karyaa-v2';
+const RUNTIME_CACHE = 'karyaa-runtime-v2';
 
 // Install event - precache the app shell
 self.addEventListener('install', (event) => {
