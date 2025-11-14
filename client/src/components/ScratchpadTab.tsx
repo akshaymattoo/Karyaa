@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { ADD_SCRATCHPAD_CLICKED, track } from '@/lib/analytics';
 import {
   findActiveShortcode,
   replaceEmojiShortcodes,
@@ -332,6 +333,7 @@ export function ScratchpadTab({ items, tasks, onAddItem, onDeleteItem, onSendToT
             type="submit"
             className="h-10 gap-2 flex-shrink-0 self-start"
             data-testid="button-add-scratchpad"
+            onClick={ () => track(ADD_SCRATCHPAD_CLICKED)}
           >
             <Plus className="h-4 w-4" />
             Add

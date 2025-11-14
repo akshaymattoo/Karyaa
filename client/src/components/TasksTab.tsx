@@ -1,6 +1,16 @@
+import { EmojiPicker } from '@/components/EmojiPicker';
+import { AutoResizeTextarea } from '@/components/ui/auto-resize-textarea';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
@@ -11,29 +21,21 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { cn } from '@/lib/utils';
-import { Task } from '@shared/schema';
-import { format } from 'date-fns';
-import { CalendarIcon, CheckCircle2, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
-import { type ChangeEvent, type KeyboardEvent, useRef, useState } from 'react';
-import { EmptyState } from './EmptyState';
-import { TaskCard } from './TaskCard';
-import { AutoResizeTextarea } from '@/components/ui/auto-resize-textarea';
-import { EmojiPicker } from '@/components/EmojiPicker';
-import {
   findActiveShortcode,
   replaceEmojiShortcodes,
   replaceShortcodeSegment,
   searchEmojiShortcodes,
   type EmojiDefinition,
 } from '@/lib/emoji';
+import { cn } from '@/lib/utils';
+import { Task } from '@shared/schema';
+import { format } from 'date-fns';
+import { CalendarIcon, CheckCircle2, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { useRef, useState, type ChangeEvent, type KeyboardEvent } from 'react';
+import { EmptyState } from './EmptyState';
+import { TaskCard } from './TaskCard';
+
+import { ADD_TASK_CLICKED, track } from '@/lib/analytics';
 
 interface TasksTabProps {
   tasks: Task[];
@@ -451,7 +453,7 @@ export function TasksTab({ tasks, onAddTask, onToggleComplete, onDeleteTask, onU
             </PopoverContent>
           </Popover>
 
-          <Button type="submit" className="h-10 gap-2" disabled={!canAddTask} data-testid="button-add-task">
+          <Button type="submit" className="h-10 gap-2" disabled={!canAddTask} data-testid="button-add-task" onClick={ ()=> track(ADD_TASK_CLICKED)}>
             <Plus className="h-4 w-4" />
             Add Task
           </Button>

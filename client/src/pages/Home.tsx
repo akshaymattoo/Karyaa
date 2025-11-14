@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useFeedback } from '@/hooks/useFeedback';
 import { useScratchpad } from '@/hooks/useScratchpad';
 import { useTasks } from '@/hooks/useTasks';
+import { CALENDER_TAB_CLICKED, SCRATCHPAD_TAB_CLICKED, TASK_TAB_CLICKED, track } from '@/lib/analytics';
 import { Calendar, CheckCircle2, FileText, Lock, NotebookPenIcon } from 'lucide-react';
 import { useState } from 'react';
 
@@ -143,6 +144,7 @@ export default function Home() {
                     value="tasks"
                     className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent"
                     data-testid="tab-tasks"
+                    onClick={ () => track(TASK_TAB_CLICKED)}
                   >
                     <CheckCircle2 className="h-4 w-4 mr-2" />
                     Tasks
@@ -157,6 +159,7 @@ export default function Home() {
                             className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent"
                             disabled
                             data-testid="tab-scratchpad"
+                            onClick={ () => track(SCRATCHPAD_TAB_CLICKED)}
                           >
                             <FileText className="h-4 w-4 mr-2" />
                             Scratchpad
@@ -173,6 +176,8 @@ export default function Home() {
                       value="scratchpad"
                       className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent"
                       data-testid="tab-scratchpad"
+                      onClick={ () => track(SCRATCHPAD_TAB_CLICKED)}
+
                     >
                       <FileText className="h-4 w-4 mr-2" />
                       Scratchpad
@@ -188,6 +193,7 @@ export default function Home() {
                             className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent"
                             disabled
                             data-testid="tab-calendar"
+                            onClick = { () => track(CALENDER_TAB_CLICKED)}
                           >
                             <Calendar className="h-4 w-4 mr-2" />
                             Calendar
@@ -204,6 +210,8 @@ export default function Home() {
                       value="calendar"
                       className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent"
                       data-testid="tab-calendar"
+                      onClick = { () => track(CALENDER_TAB_CLICKED)}
+
                     >
                       <Calendar className="h-4 w-4 mr-2" />
                       Calendar
