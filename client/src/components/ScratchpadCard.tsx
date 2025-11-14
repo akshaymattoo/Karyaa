@@ -1,7 +1,8 @@
+import { LinkifiedText } from '@/components/LinkifiedText';
 import { Button } from '@/components/ui/button';
+import { DELETE_SCRATCHPAD_ITEM, SEND_TO_TASK, track } from '@/lib/analytics';
 import { ScratchpadItem } from '@shared/schema';
 import { ArrowRight, Trash2 } from 'lucide-react';
-import { LinkifiedText } from '@/components/LinkifiedText';
 
 interface ScratchpadCardProps {
   item: ScratchpadItem;
@@ -38,6 +39,7 @@ export function ScratchpadCard({ item, onSendToTasks, onDelete, onEdit }: Scratc
           onClick={(event) => {
             event.stopPropagation();
             onSendToTasks(item);
+            track(SEND_TO_TASK)
           }}
           variant="ghost"
           size="sm"
@@ -51,6 +53,7 @@ export function ScratchpadCard({ item, onSendToTasks, onDelete, onEdit }: Scratc
           onClick={(event) => {
             event.stopPropagation();
             onDelete(item.id);
+            track(DELETE_SCRATCHPAD_ITEM)
           }}
           variant="ghost"
           size="icon"
