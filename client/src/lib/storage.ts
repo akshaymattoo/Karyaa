@@ -7,7 +7,10 @@ export const localStorage = {
   getTasks(): Task[] {
     try {
       const data = window.localStorage.getItem(TASKS_KEY);
-      return data ? JSON.parse(data) : [];
+      const tasks = data ? JSON.parse(data) : [];
+      return tasks.sort((a: Task, b: Task) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
     } catch {
       return [];
     }
@@ -24,7 +27,10 @@ export const localStorage = {
   getScratchpad(): ScratchpadItem[] {
     try {
       const data = window.localStorage.getItem(SCRATCHPAD_KEY);
-      return data ? JSON.parse(data) : [];
+      const items = data ? JSON.parse(data) : [];
+      return items.sort((a: ScratchpadItem, b: ScratchpadItem) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
     } catch {
       return [];
     }
