@@ -147,7 +147,9 @@ export function useTasks() {
 
         if (response.ok) {
           const createdTask = await response.json();
-          const updatedTasks = [...tasks, createdTask];
+          const updatedTasks = [...tasks, createdTask].sort((a, b) => 
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
           setTasks(updatedTasks);
           localStorageService.saveTasks(updatedTasks);
           return createdTask;
@@ -169,7 +171,9 @@ export function useTasks() {
         createdAt: timestamp,
         updatedAt: timestamp,
       };
-      const updatedTasks = [...tasks, localTask];
+      const updatedTasks = [...tasks, localTask].sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
       setTasks(updatedTasks);
       localStorageService.saveTasks(updatedTasks);
       return localTask;
@@ -202,7 +206,9 @@ export function useTasks() {
 
         if (response.ok) {
           const updated = await response.json();
-          const updatedTasks = tasks.map(t => t.id === taskId ? updated : t);
+          const updatedTasks = tasks.map(t => t.id === taskId ? updated : t).sort((a, b) => 
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
           setTasks(updatedTasks);
           localStorageService.saveTasks(updatedTasks);
         }
@@ -210,7 +216,9 @@ export function useTasks() {
         console.error('Error updating task:', error);
       }
     } else {
-      const updatedTasks = tasks.map(t => t.id === taskId ? updatedTask : t);
+      const updatedTasks = tasks.map(t => t.id === taskId ? updatedTask : t).sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
       setTasks(updatedTasks);
       localStorageService.saveTasks(updatedTasks);
     }
@@ -234,7 +242,9 @@ export function useTasks() {
         });
 
         if (response.ok) {
-          const updatedTasks = tasks.filter(t => t.id !== taskId);
+          const updatedTasks = tasks.filter(t => t.id !== taskId).sort((a, b) => 
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
           setTasks(updatedTasks);
           localStorageService.saveTasks(updatedTasks);
         }
@@ -242,7 +252,9 @@ export function useTasks() {
         console.error('Error deleting task:', error);
       }
     } else {
-      const updatedTasks = tasks.filter(t => t.id !== taskId);
+      const updatedTasks = tasks.filter(t => t.id !== taskId).sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
       setTasks(updatedTasks);
       localStorageService.saveTasks(updatedTasks);
     }
@@ -277,6 +289,8 @@ export function useTasks() {
           const updated = await response.json();
           const updatedTasks = tasks.map(task =>
             task.id === taskId ? updated : task
+          ).sort((a, b) => 
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           );
           setTasks(updatedTasks);
           localStorageService.saveTasks(updatedTasks);
@@ -293,6 +307,8 @@ export function useTasks() {
       } as Task;
       const updatedTasks = tasks.map(task =>
         task.id === taskId ? updatedTask : task
+      ).sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
       setTasks(updatedTasks);
       localStorageService.saveTasks(updatedTasks);
