@@ -18,7 +18,7 @@ export function ScratchpadCard({ item, onSendToTasks, onDelete, onEdit }: Scratc
 
   return (
     <div
-      className="group flex items-start justify-between gap-3 p-4 rounded-md border bg-card hover-elevate transition-all cursor-pointer"
+      className="group flex flex-col md:flex-row md:items-start md:justify-between gap-3 p-4 rounded-md border bg-card hover-elevate transition-all cursor-pointer"
       data-testid={`scratchpad-card-${item.id}`}
       role={onEdit ? 'button' : undefined}
       tabIndex={onEdit ? 0 : undefined}
@@ -34,7 +34,7 @@ export function ScratchpadCard({ item, onSendToTasks, onDelete, onEdit }: Scratc
       <div className="flex-1 min-w-0">
         <LinkifiedText text={item.title} className="text-base" />
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 self-start md:self-center">
         <Button
           onClick={(event) => {
             event.stopPropagation();
