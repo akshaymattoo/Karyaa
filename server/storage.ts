@@ -1,5 +1,5 @@
 import { feedback, FeedbackItem, InsertFeedback, pushSubscriptions, scratchpad, tasks, userSettings, type InsertPushSubscription, type InsertScratchpad, type InsertTask, type InsertUserSettings, type PushSubscription, type ScratchpadItem, type Task, type UserSettings } from '@shared/schema';
-import { and, eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import { db } from './db';
 
 export interface IStorage {
@@ -32,7 +32,7 @@ export interface IStorage {
 
 export class DbStorage implements IStorage {
   async getTasks(userId: string): Promise<Task[]> {
-    return await db.select().from(tasks).where(eq(tasks.userId, userId));
+    return await db.select().from(tasks).where(eq(tasks.userId, userId)).orderBy(desc(tasks.createdAt));
   }
 
   async createTask(task: InsertTask): Promise<Task> {
@@ -62,7 +62,7 @@ export class DbStorage implements IStorage {
   }
 
   async getScratchpad(userId: string): Promise<ScratchpadItem[]> {
-    return await db.select().from(scratchpad).where(eq(scratchpad.userId, userId));
+    return await db.select().from(scratchpad).where(eq(scratchpad.userId, userId)).orderBy(desc(scratchpad.createdAt));
   }
 
   async createScratchpadItem(item: InsertScratchpad): Promise<ScratchpadItem> {
