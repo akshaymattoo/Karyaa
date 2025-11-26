@@ -3,7 +3,7 @@ import { Task } from '@shared/schema';
 import { TaskCard } from './TaskCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, List, Grid } from 'lucide-react';
 import {
   startOfMonth,
   endOfMonth,
@@ -33,6 +33,7 @@ interface CalendarTabProps {
 export function CalendarTab({ tasks, onToggleComplete, onDeleteTask }: CalendarTabProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+  const [viewMode, setViewMode] = useState<'month' | 'list'>('month');
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
@@ -67,89 +68,194 @@ export function CalendarTab({ tasks, onToggleComplete, onDeleteTask }: CalendarT
     setCurrentMonth(new Date());
   };
 
+  // Get unique dates from tasks and group them
+  const getTasksByDate = () => {
+    const groupedByDate = new Map<string, Task[]>();
+    
+    tasks.forEach(task => {
+      if (!groupedByDate.has(task.date)) {
+        groupedByDate.set(task.date, []);
+      }
+      groupedByDate.get(task.date)!.push(task);
+    });
+
+    // Sort by date (latest first)
+    return Array.from(groupedByDate.entries())
+      .sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime());
+  };
+
   return (
     <div className="max-w-6xl mx-auto px-4 md:px-6 py-8">
       <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-2xl font-semibold">{format(currentMonth, 'MMMM yyyy')}</h2>
+        <h2 className="text-2xl font-semibold">
+          {viewMode === 'month' ? format(currentMonth, 'MMMM yyyy') : 'All Tasks'}
+        </h2>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={goToPreviousMonth}
-            data-testid="button-previous-month"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            onClick={goToToday}
-            data-testid="button-current-month"
-          >
-            Today
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={goToNextMonth}
-            data-testid="button-next-month"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+          {viewMode === 'month' && (
+            <>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={goToPreviousMonth}
+                data-testid="button-previous-month"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                onClick={goToToday}
+                data-testid="button-current-month"
+              >
+                Today
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={goToNextMonth}
+                data-testid="button-next-month"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </>
+          )}
+          <div className="flex gap-1 border rounded-md p-0.5">
+            <Button
+              variant={viewMode === 'month' ? 'default' : 'ghost'}
+              size="icon"
+              onClick={() => setViewMode('month')}
+              data-testid="button-view-month"
+            >
+              <Grid className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'ghost'}
+              size="icon"
+              onClick={() => setViewMode('list')}
+              data-testid="button-view-list"
+            >
+              <List className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-1 md:gap-2">
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-          <div key={day} className="text-center text-xs font-medium text-muted-foreground p-2">
-            {day}
-          </div>
-        ))}
+      {viewMode === 'month' ? (
+        <div className="grid grid-cols-7 gap-1 md:gap-2">
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+            <div key={day} className="text-center text-xs font-medium text-muted-foreground p-2">
+              {day}
+            </div>
+          ))}
 
-        {daysToShow.map((day, index) => {
-          if (!day) {
-            return <div key={`empty-${index}`} className="aspect-square" />;
-          }
+          {daysToShow.map((day, index) => {
+            if (!day) {
+              return <div key={`empty-${index}`} className="aspect-square" />;
+            }
 
-          const dayTasks = getTasksForDay(day);
-          const workCount = dayTasks.filter(t => t.bucket === 'work').length;
-          const personalCount = dayTasks.filter(t => t.bucket === 'personal').length;
-          const isCurrentMonth = isSameMonth(day, currentMonth);
-          const isDayToday = isToday(day);
-          const isSelected = selectedDay && isSameDay(day, selectedDay);
+            const dayTasks = getTasksForDay(day);
+            const workCount = dayTasks.filter(t => t.bucket === 'work').length;
+            const personalCount = dayTasks.filter(t => t.bucket === 'personal').length;
+            const isCurrentMonth = isSameMonth(day, currentMonth);
+            const isDayToday = isToday(day);
+            const isSelected = selectedDay && isSameDay(day, selectedDay);
 
-          return (
-            <button
-              key={day.toISOString()}
-              onClick={() => setSelectedDay(day)}
-              className={cn(
-                'aspect-square p-2 rounded-md border transition-colors text-left relative hover-elevate',
-                !isCurrentMonth && 'opacity-40',
-                isDayToday && 'border-primary border-2',
-                isSelected && 'bg-primary text-primary-foreground'
-              )}
-              data-testid={`calendar-day-${format(day, 'yyyy-MM-dd')}`}
-            >
-              <div className={cn('text-sm font-medium', isSelected && 'text-primary-foreground')}>
-                {format(day, 'd')}
-              </div>
-              {(workCount > 0 || personalCount > 0) && (
-                <div className="flex gap-1 mt-1 flex-wrap">
-                  {workCount > 0 && (
-                    <Badge variant="default" className="text-[10px] h-4 px-1" data-testid="badge-work-count">
-                      W:{workCount}
-                    </Badge>
-                  )}
-                  {personalCount > 0 && (
-                    <Badge variant="secondary" className="text-[10px] h-4 px-1" data-testid="badge-personal-count">
-                      P:{personalCount}
-                    </Badge>
-                  )}
+            return (
+              <button
+                key={day.toISOString()}
+                onClick={() => setSelectedDay(day)}
+                className={cn(
+                  'aspect-square p-2 rounded-md border transition-colors text-left relative hover-elevate',
+                  !isCurrentMonth && 'opacity-40',
+                  isDayToday && 'border-primary border-2',
+                  isSelected && 'bg-primary text-primary-foreground'
+                )}
+                data-testid={`calendar-day-${format(day, 'yyyy-MM-dd')}`}
+              >
+                <div className={cn('text-sm font-medium', isSelected && 'text-primary-foreground')}>
+                  {format(day, 'd')}
                 </div>
-              )}
-            </button>
-          );
-        })}
-      </div>
+                {(workCount > 0 || personalCount > 0) && (
+                  <div className="flex gap-1 mt-1 flex-wrap">
+                    {workCount > 0 && (
+                      <Badge variant="default" className="text-[10px] h-4 px-1" data-testid="badge-work-count">
+                        W:{workCount}
+                      </Badge>
+                    )}
+                    {personalCount > 0 && (
+                      <Badge variant="secondary" className="text-[10px] h-4 px-1" data-testid="badge-personal-count">
+                        P:{personalCount}
+                      </Badge>
+                    )}
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {getTasksByDate().length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">No tasks yet</p>
+          ) : (
+            getTasksByDate().map(([dateString, dateTasks]) => {
+              const dateObj = new Date(dateString);
+              const workTasks = dateTasks.filter(t => t.bucket === 'work');
+              const personalTasks = dateTasks.filter(t => t.bucket === 'personal');
+
+              return (
+                <div key={dateString} className="border rounded-lg p-4" data-testid={`list-day-${dateString}`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold">
+                      {isToday(dateObj) ? 'Today' : format(dateObj, 'EEEE, MMMM d, yyyy')}
+                    </h3>
+                    <Badge variant="outline">{dateTasks.length} task{dateTasks.length !== 1 ? 's' : ''}</Badge>
+                  </div>
+
+                  <div className="space-y-6">
+                    {workTasks.length > 0 && (
+                      <div>
+                        <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
+                          Work
+                          <Badge variant="secondary" className="text-xs">{workTasks.length}</Badge>
+                        </h4>
+                        <div className="space-y-2">
+                          {workTasks.map(task => (
+                            <TaskCard
+                              key={task.id}
+                              task={task}
+                              onToggleComplete={onToggleComplete}
+                              onDelete={onDeleteTask}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {personalTasks.length > 0 && (
+                      <div>
+                        <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
+                          Personal
+                          <Badge variant="secondary" className="text-xs">{personalTasks.length}</Badge>
+                        </h4>
+                        <div className="space-y-2">
+                          {personalTasks.map(task => (
+                            <TaskCard
+                              key={task.id}
+                              task={task}
+                              onToggleComplete={onToggleComplete}
+                              onDelete={onDeleteTask}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
 
       <Sheet open={!!selectedDay} onOpenChange={(open) => !open && setSelectedDay(null)}>
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto" data-testid="sheet-day-details">
