@@ -86,7 +86,7 @@ export function CalendarTab({ tasks, onToggleComplete, onDeleteTask }: CalendarT
 
   return (
     <div className="max-w-6xl mx-auto px-4 md:px-6 py-8">
-      <div className="mb-6 flex items-center justify-between sticky top-0 z-10 bg-background">
+      <div className="flex items-center justify-between sticky top-0 z-10 bg-background pb-4">
         <h2 className="text-2xl font-semibold">
           {viewMode === 'month' ? format(currentMonth, 'MMMM yyyy') : 'All Tasks'}
         </h2>
@@ -140,7 +140,7 @@ export function CalendarTab({ tasks, onToggleComplete, onDeleteTask }: CalendarT
       </div>
 
       {viewMode === 'month' ? (
-        <div className="grid grid-cols-7 gap-1 md:gap-2">
+        <div className="pt-4 grid grid-cols-7 gap-1 md:gap-2">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
             <div key={day} className="text-center text-xs font-medium text-muted-foreground p-2">
               {day}
@@ -193,7 +193,7 @@ export function CalendarTab({ tasks, onToggleComplete, onDeleteTask }: CalendarT
           })}
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="pt-4 space-y-6">
           {getTasksByDate().length === 0 ? (
             <p className="text-center text-muted-foreground py-8">No tasks yet</p>
           ) : (
