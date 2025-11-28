@@ -287,7 +287,7 @@ export function ScratchpadTab({ items, tasks, onAddItem, onDeleteItem, onSendToT
 
   return (
     <div className="max-w-4xl mx-auto px-4 md:px-6 py-8">
-      <form onSubmit={handleSubmit} className="mb-8">
+      <form onSubmit={handleSubmit} className="sticky top-0 z-10 bg-background pb-4">
         <div className="flex gap-4 items-start">
           <div className="flex-1">
             <Label htmlFor="item-title" className="sr-only">Idea or note</Label>
@@ -348,7 +348,7 @@ export function ScratchpadTab({ items, tasks, onAddItem, onDeleteItem, onSendToT
           description="Capture quick ideas, notes, and thoughts. Send them to your tasks when you're ready to schedule them."
         />
       ) : (
-        <div className="space-y-3">
+        <div className="pt-4 space-y-3">
           {items.map(item => (
             <ScratchpadCard
               key={item.id}
