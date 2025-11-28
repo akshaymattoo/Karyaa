@@ -374,7 +374,7 @@ export function TasksTab({ tasks, onAddTask, onToggleComplete, onDeleteTask, onU
       </div>
     }
 
-      <form onSubmit={handleSubmit} className="mb-8 space-y-4">
+      <form onSubmit={handleSubmit} className="sticky top-0 z-10 bg-background pb-4 space-y-4">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1">
             <Label htmlFor="task-title" className="sr-only">Task title</Label>
@@ -460,7 +460,7 @@ export function TasksTab({ tasks, onAddTask, onToggleComplete, onDeleteTask, onU
         </div>
       </form>
 
-      <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="sticky top-28 z-10 bg-background pb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
@@ -549,7 +549,7 @@ export function TasksTab({ tasks, onAddTask, onToggleComplete, onDeleteTask, onU
           description={`No ${filterBucket === 'all' ? '' : filterBucket + ' '}tasks scheduled for ${format(viewDate, 'MMMM d, yyyy')}.`}
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="pt-4 grid grid-cols-1 md:grid-cols-3 gap-6">
           {filterBucket === 'all' && (
             <>
               <div>
