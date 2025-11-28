@@ -86,7 +86,7 @@ export function CalendarTab({ tasks, onToggleComplete, onDeleteTask }: CalendarT
 
   return (
     <div className="max-w-6xl mx-auto px-4 md:px-6 py-8">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex items-center justify-between sticky top-0 z-10 bg-background">
         <h2 className="text-2xl font-semibold">
           {viewMode === 'month' ? format(currentMonth, 'MMMM yyyy') : 'All Tasks'}
         </h2>
