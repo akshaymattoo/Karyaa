@@ -164,7 +164,7 @@ export function CalendarTab({ tasks, onToggleComplete, onDeleteTask }: CalendarT
                 key={day.toISOString()}
                 onClick={() => setSelectedDay(day)}
                 className={cn(
-                  'aspect-square p-2 rounded-md border transition-colors text-left relative hover-elevate',
+                  'aspect-square p-2 rounded-md border transition-colors text-left relative hover-elevate overflow-hidden flex flex-col',
                   !isCurrentMonth && 'opacity-40',
                   isDayToday && 'border-primary border-2',
                   isSelected && 'bg-primary text-primary-foreground'
@@ -175,14 +175,14 @@ export function CalendarTab({ tasks, onToggleComplete, onDeleteTask }: CalendarT
                   {format(day, 'd')}
                 </div>
                 {(workCount > 0 || personalCount > 0) && (
-                  <div className="flex gap-1 mt-1 flex-wrap">
+                  <div className="flex gap-1 mt-1 flex-nowrap overflow-hidden">
                     {workCount > 0 && (
-                      <Badge variant="default" className="text-[10px] h-4 px-1" data-testid="badge-work-count">
+                      <Badge variant="default" className="text-[10px] h-4 px-1 min-w-0 truncate" data-testid="badge-work-count">
                         W:{workCount}
                       </Badge>
                     )}
                     {personalCount > 0 && (
-                      <Badge variant="secondary" className="text-[10px] h-4 px-1" data-testid="badge-personal-count">
+                      <Badge variant="secondary" className="text-[10px] h-4 px-1 min-w-0 truncate" data-testid="badge-personal-count">
                         P:{personalCount}
                       </Badge>
                     )}
