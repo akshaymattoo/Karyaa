@@ -1,4 +1,4 @@
-import { insertFeedbackSchema, insertPushSubscriptionSchema, insertScratchpadSchema, insertTaskSchema, insertUserSettingsSchema, type Task } from "@shared/schema";
+import { insertFeedbackSchema, insertPushSubscriptionSchema, insertScratchpadSchema, insertTaskSchema, insertUserSettingsSchema, insertWeeklyActivitySchema, insertWeeklyCompletionSchema, type Task } from "@shared/schema";
 import { createClient } from "@supabase/supabase-js";
 import type { Express } from "express";
 import { createServer, type Server } from "http";
@@ -457,6 +457,183 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error updating user settings:', error);
       res.status(400).json({ error: 'Failed to update user settings' });
+    }
+  });
+
+  // Weekly Activities Routes
+
+  // Get all weekly activities for authenticated user
+  app.get('/api/weekly-activities', async (req, res) => {
+    try {
+      const userId = await getUserFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const activities = await storage.getWeeklyActivities(userId);
+      res.json(activities);
+    } catch (error) {
+      console.error('Error fetching weekly activities:', error);
+      res.status(500).json({ error: 'Failed to fetch weekly activities' });
+    }
+  });
+
+  // Create a new weekly activity
+  app.post('/api/weekly-activities', async (req, res) => {
+    try {
+      const userId = await getUserFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const validatedData = insertWeeklyActivitySchema.parse({ ...req.body, userId });
+      const activity = await storage.createWeeklyActivity(validatedData);
+      res.json(activity);
+    } catch (error) {
+      console.error('Error creating weekly activity:', error);
+      res.status(400).json({ error: 'Failed to create weekly activity' });
+    }
+  });
+
+  // Update a weekly activity
+  app.patch('/api/weekly-activities/:id', async (req, res) => {
+    try {
+      const userId = await getUserFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const { id } = req.params;
+      const activity = await storage.updateWeeklyActivity(id, userId, req.body);
+      
+      if (!activity) {
+        return res.status(404).json({ error: 'Weekly activity not found' });
+      }
+
+      res.json(activity);
+    } catch (error) {
+      console.error('Error updating weekly activity:', error);
+      res.status(400).json({ error: 'Failed to update weekly activity' });
+    }
+  });
+
+  // Delete a weekly activity
+  app.delete('/api/weekly-activities/:id', async (req, res) => {
+    try {
+      const userId = await getUserFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const { id } = req.params;
+      const success = await storage.deleteWeeklyActivity(id, userId);
+      
+      if (!success) {
+        return res.status(404).json({ error: 'Weekly activity not found' });
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting weekly activity:', error);
+      res.status(500).json({ error: 'Failed to delete weekly activity' });
+    }
+  });
+
+  // Weekly Completions Routes
+
+  // Get weekly completions for a date range
+  app.get('/api/weekly-completions', async (req, res) => {
+    try {
+      const userId = await getUserFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const { startDate, endDate } = req.query;
+      if (!startDate || !endDate || typeof startDate !== 'string' || typeof endDate !== 'string') {
+        return res.status(400).json({ error: 'startDate and endDate query parameters required' });
+      }
+
+      const completions = await storage.getWeeklyCompletions(userId, startDate, endDate);
+      res.json(completions);
+    } catch (error) {
+      console.error('Error fetching weekly completions:', error);
+      res.status(500).json({ error: 'Failed to fetch weekly completions' });
+    }
+  });
+
+  // Create a weekly completion (mark activity done for a specific date)
+  app.post('/api/weekly-completions', async (req, res) => {
+    try {
+      const userId = await getUserFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const validatedData = insertWeeklyCompletionSchema.parse({ ...req.body, userId });
+      const completion = await storage.createWeeklyCompletion(validatedData);
+      res.json(completion);
+    } catch (error) {
+      console.error('Error creating weekly completion:', error);
+      res.status(400).json({ error: 'Failed to create weekly completion' });
+    }
+  });
+
+  // Delete a weekly completion by ID
+  app.delete('/api/weekly-completions/:id', async (req, res) => {
+    try {
+      const userId = await getUserFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const { id } = req.params;
+      const success = await storage.deleteWeeklyCompletion(id, userId);
+      
+      if (!success) {
+        return res.status(404).json({ error: 'Weekly completion not found' });
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting weekly completion:', error);
+      res.status(500).json({ error: 'Failed to delete weekly completion' });
+    }
+  });
+
+  // Toggle completion for an activity on a specific date
+  app.post('/api/weekly-completions/toggle', async (req, res) => {
+    try {
+      const userId = await getUserFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const { activityId, date } = req.body;
+      if (!activityId || !date) {
+        return res.status(400).json({ error: 'activityId and date required' });
+      }
+
+      // Check if completion exists for this activity + date
+      const existingCompletions = await storage.getWeeklyCompletions(userId, date, date);
+      const existing = existingCompletions.find(c => c.activityId === activityId);
+
+      if (existing) {
+        // Remove completion (toggle off)
+        await storage.deleteWeeklyCompletionByActivityAndDate(activityId, userId, date);
+        res.json({ completed: false });
+      } else {
+        // Add completion (toggle on)
+        const completion = await storage.createWeeklyCompletion({
+          activityId,
+          userId,
+          date,
+        });
+        res.json({ completed: true, completion });
+      }
+    } catch (error) {
+      console.error('Error toggling weekly completion:', error);
+      res.status(500).json({ error: 'Failed to toggle weekly completion' });
     }
   });
 
