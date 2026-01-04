@@ -4,6 +4,7 @@ import { EmptyState } from '@/components/EmptyState';
 import FeedbackModal from '@/components/FeedbackModal';
 import { ScratchpadTab } from '@/components/ScratchpadTab';
 import { TasksTab } from '@/components/TasksTab';
+import { WeeklyPlannerTab } from '@/components/WeeklyPlannerTab';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,7 +13,7 @@ import { useFeedback } from '@/hooks/useFeedback';
 import { useScratchpad } from '@/hooks/useScratchpad';
 import { useTasks } from '@/hooks/useTasks';
 import { CALENDER_TAB_CLICKED, SCRATCHPAD_TAB_CLICKED, TASK_TAB_CLICKED, track } from '@/lib/analytics';
-import { Calendar, CheckCircle2, FileText, Lock, NotebookPenIcon } from 'lucide-react';
+import { Calendar, CheckCircle2, FileText, Lock, NotebookPenIcon, RotateCcw } from 'lucide-react';
 import { useState } from 'react';
 
 export default function Home() {
@@ -217,6 +218,37 @@ export default function Home() {
                       Calendar
                     </TabsTrigger>
                   )}
+
+                  {!user ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="inline-flex">
+                          <TabsTrigger
+                            value="weekly"
+                            className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent"
+                            disabled
+                            data-testid="tab-weekly"
+                          >
+                            <RotateCcw className="h-4 w-4 mr-2" />
+                            Weekly
+                            <Lock className="h-3 w-3 ml-2" />
+                          </TabsTrigger>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        Sign in to plan weekly activities
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    <TabsTrigger
+                      value="weekly"
+                      className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent"
+                      data-testid="tab-weekly"
+                    >
+                      <RotateCcw className="h-4 w-4 mr-2" />
+                      Weekly
+                    </TabsTrigger>
+                  )}
                 </TabsList>
               </TooltipProvider>
             </div>
@@ -284,6 +316,21 @@ export default function Home() {
                 onToggleComplete={handleToggleComplete}
                 onDeleteTask={handleDeleteTask}
               />
+            )}
+          </TabsContent>
+
+          <TabsContent value="weekly" className="mt-0">
+            {!user ? (
+              <EmptyState
+                icon={Lock}
+                title="Sign in to plan weekly activities"
+                description="Track recurring activities like exercise, healthy eating, and more. Available with a free Google account."
+                actionLabel="Sign in with Google"
+                onAction={signInWithGoogle}
+                hoverTitle="Sign in to plan weekly activities"
+              />
+            ) : (
+              <WeeklyPlannerTab />
             )}
           </TabsContent>
         </Tabs>

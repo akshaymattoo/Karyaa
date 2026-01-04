@@ -10,7 +10,7 @@ A beautiful React + TypeScript Progressive Web App (PWA) with smart task managem
 - **Tailwind CSS** with purple and white design system
 - **Supabase Auth** for Google OAuth
 - **Dual-mode persistence**: localStorage for anonymous users, Supabase for authenticated users
-- **Four tabs**: Tasks (always available), Scratchpad (login-gated), Calendar (login-gated), Settings (login-gated)
+- **Five tabs**: Tasks (always available), Scratchpad (login-gated), Calendar (login-gated), Weekly Planner (login-gated), Settings (via avatar dropdown)
 - **PWA Support**: Service worker for offline functionality and installability
 - **Push Notifications**: Web Push API with VAPID authentication
 
@@ -24,7 +24,9 @@ A beautiful React + TypeScript Progressive Web App (PWA) with smart task managem
 - `tasks` table: id, userId, title, bucket (work/personal), date, completed, createdAt, updatedAt
 - `scratchpad` table: id, userId, title, createdAt
 - `push_subscriptions` table: id, userId, endpoint, p256dh, auth, createdAt
-- `user_settings` table: id, userId, reminderTime, reminderEnabled, createdAt, updatedAt
+- `user_settings` table: id, userId, reminderTime, reminderEnabled, lastReminderSent, createdAt, updatedAt
+- `weekly_activities` table: id, userId, title, targetCount, category, createdAt, updatedAt
+- `weekly_completions` table: id, activityId, userId, date, createdAt
 
 ## Setup Instructions
 
@@ -92,6 +94,17 @@ See `PWA_SETUP.md` for detailed setup instructions.
 - Click day to view/edit/complete/delete tasks
 - Side panel with task management
 
+### Weekly Planner Tab (Login Required)
+- Define recurring weekly activities (e.g., "Eat blueberries", "Strength training 3x/week")
+- Set target frequency for each activity (1-7 times per week)
+- Categorize activities (Health, Fitness, Nutrition, Learning, Wellness, Other)
+- Week view showing all 7 days with completion checkboxes
+- Click to toggle completion for any day
+- Progress bar showing completion vs target for the week
+- Navigate between weeks (previous/next/current week)
+- Edit and delete activities
+- Mobile-responsive layout
+
 ### Settings Tab (Login Required)
 - Push notification management
 - Enable/disable notifications with one click
@@ -122,6 +135,13 @@ See `PWA_SETUP.md` for detailed setup instructions.
 - Responsive design with mobile-first approach
 
 ## Recent Changes
+- 2026-01-04: Added Weekly Planner tab
+  - New database tables: weekly_activities, weekly_completions
+  - Define recurring activities with target frequency per week
+  - Track daily completion with visual week grid
+  - Progress bar shows completion rate
+  - Categories: Health, Fitness, Nutrition, Learning, Wellness, Other
+  - Week navigation (previous/next/current)
 - 2025-11-08: UI/UX improvements and bug fixes
   - Moved Settings from separate tab to user profile dropdown menu
   - Created SettingsDialog component for better UX
