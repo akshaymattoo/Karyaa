@@ -47,6 +47,26 @@ export const userSettings = pgTable("user_settings", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Weekly activity blueprints - defines what activities a user wants to do each week
+export const weeklyActivities = pgTable("weekly_activities", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: uuid("user_id").notNull(),
+  title: text("title").notNull(),
+  targetCount: text("target_count").notNull().default("1"), // e.g., "3" for 3x per week
+  category: text("category").notNull().default("health"), // health, fitness, nutrition, etc.
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Weekly completions - tracks when an activity was completed on a specific date
+export const weeklyCompletions = pgTable("weekly_completions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  activityId: varchar("activity_id").notNull(),
+  userId: uuid("user_id").notNull(),
+  date: text("date").notNull(), // ISO date string YYYY-MM-DD
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const insertTaskSchema = createInsertSchema(tasks).omit({
   id: true,
   createdAt: true,
@@ -75,6 +95,17 @@ export const insertUserSettingsSchema = createInsertSchema(userSettings).omit({
   updatedAt: true,
 });
 
+export const insertWeeklyActivitySchema = createInsertSchema(weeklyActivities).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertWeeklyCompletionSchema = createInsertSchema(weeklyCompletions).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type InsertTask = z.infer<typeof insertTaskSchema>;
 export type Task = typeof tasks.$inferSelect;
 
@@ -89,3 +120,9 @@ export type PushSubscription = typeof pushSubscriptions.$inferSelect;
 
 export type InsertUserSettings = z.infer<typeof insertUserSettingsSchema>;
 export type UserSettings = typeof userSettings.$inferSelect;
+
+export type InsertWeeklyActivity = z.infer<typeof insertWeeklyActivitySchema>;
+export type WeeklyActivity = typeof weeklyActivities.$inferSelect;
+
+export type InsertWeeklyCompletion = z.infer<typeof insertWeeklyCompletionSchema>;
+export type WeeklyCompletion = typeof weeklyCompletions.$inferSelect;
