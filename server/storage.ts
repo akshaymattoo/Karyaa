@@ -1,5 +1,5 @@
-import { feedback, FeedbackItem, InsertFeedback, pushSubscriptions, scratchpad, tasks, userSettings, type InsertPushSubscription, type InsertScratchpad, type InsertTask, type InsertUserSettings, type PushSubscription, type ScratchpadItem, type Task, type UserSettings } from '@shared/schema';
-import { and, desc, eq } from 'drizzle-orm';
+import { feedback, FeedbackItem, InsertFeedback, InsertWeeklyActivity, InsertWeeklyCompletion, pushSubscriptions, scratchpad, tasks, userSettings, weeklyActivities, weeklyCompletions, WeeklyActivity, WeeklyCompletion, type InsertPushSubscription, type InsertScratchpad, type InsertTask, type InsertUserSettings, type PushSubscription, type ScratchpadItem, type Task, type UserSettings } from '@shared/schema';
+import { and, desc, eq, gte, lte } from 'drizzle-orm';
 import { db } from './db';
 
 export interface IStorage {
@@ -28,6 +28,18 @@ export interface IStorage {
   getUserSettings(userId: string): Promise<UserSettings | undefined>;
   createOrUpdateUserSettings(userId: string, settings: Partial<InsertUserSettings> & { lastReminderSent?: Date }): Promise<UserSettings>;
   getAllUsersWithSettings(): Promise<UserSettings[]>;
+
+  // Weekly Activities
+  getWeeklyActivities(userId: string): Promise<WeeklyActivity[]>;
+  createWeeklyActivity(activity: InsertWeeklyActivity): Promise<WeeklyActivity>;
+  updateWeeklyActivity(id: string, userId: string, updates: Partial<WeeklyActivity>): Promise<WeeklyActivity | undefined>;
+  deleteWeeklyActivity(id: string, userId: string): Promise<boolean>;
+
+  // Weekly Completions
+  getWeeklyCompletions(userId: string, startDate: string, endDate: string): Promise<WeeklyCompletion[]>;
+  createWeeklyCompletion(completion: InsertWeeklyCompletion): Promise<WeeklyCompletion>;
+  deleteWeeklyCompletion(id: string, userId: string): Promise<boolean>;
+  deleteWeeklyCompletionByActivityAndDate(activityId: string, userId: string, date: string): Promise<boolean>;
 }
 
 export class DbStorage implements IStorage {
@@ -142,6 +154,81 @@ export class DbStorage implements IStorage {
 
   async getAllUsersWithSettings(): Promise<UserSettings[]> {
     return await db.select().from(userSettings);
+  }
+
+  // Weekly Activities
+  async getWeeklyActivities(userId: string): Promise<WeeklyActivity[]> {
+    return await db.select().from(weeklyActivities).where(eq(weeklyActivities.userId, userId)).orderBy(desc(weeklyActivities.createdAt));
+  }
+
+  async createWeeklyActivity(activity: InsertWeeklyActivity): Promise<WeeklyActivity> {
+    const [newActivity] = await db.insert(weeklyActivities).values(activity).returning();
+    return newActivity;
+  }
+
+  async updateWeeklyActivity(id: string, userId: string, updates: Partial<WeeklyActivity>): Promise<WeeklyActivity | undefined> {
+    const updateData: Partial<WeeklyActivity> = {
+      ...updates,
+      updatedAt: new Date(),
+    };
+    const [updated] = await db
+      .update(weeklyActivities)
+      .set(updateData)
+      .where(and(eq(weeklyActivities.id, id), eq(weeklyActivities.userId, userId)))
+      .returning();
+    return updated;
+  }
+
+  async deleteWeeklyActivity(id: string, userId: string): Promise<boolean> {
+    // Also delete all completions for this activity
+    await db.delete(weeklyCompletions).where(eq(weeklyCompletions.activityId, id));
+    
+    const result = await db
+      .delete(weeklyActivities)
+      .where(and(eq(weeklyActivities.id, id), eq(weeklyActivities.userId, userId)))
+      .returning();
+    return result.length > 0;
+  }
+
+  // Weekly Completions
+  async getWeeklyCompletions(userId: string, startDate: string, endDate: string): Promise<WeeklyCompletion[]> {
+    return await db
+      .select()
+      .from(weeklyCompletions)
+      .where(
+        and(
+          eq(weeklyCompletions.userId, userId),
+          gte(weeklyCompletions.date, startDate),
+          lte(weeklyCompletions.date, endDate)
+        )
+      );
+  }
+
+  async createWeeklyCompletion(completion: InsertWeeklyCompletion): Promise<WeeklyCompletion> {
+    const [newCompletion] = await db.insert(weeklyCompletions).values(completion).returning();
+    return newCompletion;
+  }
+
+  async deleteWeeklyCompletion(id: string, userId: string): Promise<boolean> {
+    const result = await db
+      .delete(weeklyCompletions)
+      .where(and(eq(weeklyCompletions.id, id), eq(weeklyCompletions.userId, userId)))
+      .returning();
+    return result.length > 0;
+  }
+
+  async deleteWeeklyCompletionByActivityAndDate(activityId: string, userId: string, date: string): Promise<boolean> {
+    const result = await db
+      .delete(weeklyCompletions)
+      .where(
+        and(
+          eq(weeklyCompletions.activityId, activityId),
+          eq(weeklyCompletions.userId, userId),
+          eq(weeklyCompletions.date, date)
+        )
+      )
+      .returning();
+    return result.length > 0;
   }
 }
 
