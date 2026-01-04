@@ -140,14 +140,14 @@ export default function Home() {
           <div className="border-b">
             <div className="max-w-6xl mx-auto px-4 md:px-6">
               <TooltipProvider delayDuration={0}>
-                <TabsList className="h-12 bg-transparent border-0 gap-8">
+                <TabsList className="h-12 bg-transparent border-0 gap-2 sm:gap-4 md:gap-8 overflow-x-auto flex-nowrap">
                   <TabsTrigger
                     value="tasks"
-                    className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent"
+                    className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent text-xs sm:text-sm whitespace-nowrap px-2 sm:px-3"
                     data-testid="tab-tasks"
                     onClick={ () => track(TASK_TAB_CLICKED)}
                   >
-                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    <CheckCircle2 className="h-4 w-4 mr-1 sm:mr-2 hidden sm:inline" />
                     Tasks
                   </TabsTrigger>
 
@@ -157,14 +157,14 @@ export default function Home() {
                         <span className="inline-flex">
                           <TabsTrigger
                             value="scratchpad"
-                            className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent"
+                            className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent text-xs sm:text-sm whitespace-nowrap px-2 sm:px-3"
                             disabled
                             data-testid="tab-scratchpad"
                             onClick={ () => track(SCRATCHPAD_TAB_CLICKED)}
                           >
-                            <FileText className="h-4 w-4 mr-2" />
+                            <FileText className="h-4 w-4 mr-1 sm:mr-2 hidden sm:inline" />
                             Scratchpad
-                            <Lock className="h-3 w-3 ml-2" />
+                            <Lock className="h-3 w-3 ml-1 sm:ml-2" />
                           </TabsTrigger>
                         </span>
                       </TooltipTrigger>
@@ -175,12 +175,12 @@ export default function Home() {
                   ) : (
                     <TabsTrigger
                       value="scratchpad"
-                      className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent"
+                      className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent text-xs sm:text-sm whitespace-nowrap px-2 sm:px-3"
                       data-testid="tab-scratchpad"
                       onClick={ () => track(SCRATCHPAD_TAB_CLICKED)}
 
                     >
-                      <FileText className="h-4 w-4 mr-2" />
+                      <FileText className="h-4 w-4 mr-1 sm:mr-2 hidden sm:inline" />
                       Scratchpad
                     </TabsTrigger>
                   )}
@@ -191,14 +191,14 @@ export default function Home() {
                         <span className="inline-flex">
                           <TabsTrigger
                             value="calendar"
-                            className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent"
+                            className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent text-xs sm:text-sm whitespace-nowrap px-2 sm:px-3"
                             disabled
                             data-testid="tab-calendar"
                             onClick = { () => track(CALENDER_TAB_CLICKED)}
                           >
-                            <Calendar className="h-4 w-4 mr-2" />
+                            <Calendar className="h-4 w-4 mr-1 sm:mr-2 hidden sm:inline" />
                             Calendar
-                            <Lock className="h-3 w-3 ml-2" />
+                            <Lock className="h-3 w-3 ml-1 sm:ml-2" />
                           </TabsTrigger>
                         </span>
                       </TooltipTrigger>
@@ -209,12 +209,12 @@ export default function Home() {
                   ) : (
                     <TabsTrigger
                       value="calendar"
-                      className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent"
+                      className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent text-xs sm:text-sm whitespace-nowrap px-2 sm:px-3"
                       data-testid="tab-calendar"
                       onClick = { () => track(CALENDER_TAB_CLICKED)}
 
                     >
-                      <Calendar className="h-4 w-4 mr-2" />
+                      <Calendar className="h-4 w-4 mr-1 sm:mr-2 hidden sm:inline" />
                       Calendar
                     </TabsTrigger>
                   )}
@@ -225,13 +225,13 @@ export default function Home() {
                         <span className="inline-flex">
                           <TabsTrigger
                             value="weekly"
-                            className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent"
+                            className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent text-xs sm:text-sm whitespace-nowrap px-2 sm:px-3"
                             disabled
                             data-testid="tab-weekly"
                           >
-                            <RotateCcw className="h-4 w-4 mr-2" />
+                            <RotateCcw className="h-4 w-4 mr-1 sm:mr-2 hidden sm:inline" />
                             Weekly
-                            <Lock className="h-3 w-3 ml-2" />
+                            <Lock className="h-3 w-3 ml-1 sm:ml-2" />
                           </TabsTrigger>
                         </span>
                       </TooltipTrigger>
@@ -242,10 +242,10 @@ export default function Home() {
                   ) : (
                     <TabsTrigger
                       value="weekly"
-                      className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent"
+                      className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none bg-transparent text-xs sm:text-sm whitespace-nowrap px-2 sm:px-3"
                       data-testid="tab-weekly"
                     >
-                      <RotateCcw className="h-4 w-4 mr-2" />
+                      <RotateCcw className="h-4 w-4 mr-1 sm:mr-2 hidden sm:inline" />
                       Weekly
                     </TabsTrigger>
                   )}
