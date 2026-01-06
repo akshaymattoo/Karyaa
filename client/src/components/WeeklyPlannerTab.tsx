@@ -266,7 +266,7 @@ export function WeeklyPlannerTab() {
         />
       ) : (
         <div className="pt-4 space-y-4">
-          <div className="hidden md:grid grid-cols-[1fr_repeat(7,minmax(60px,1fr))_auto] gap-2 items-center text-sm font-medium text-muted-foreground border-b pb-2">
+          <div className="hidden md:grid grid-cols-[minmax(200px,2fr)_repeat(7,minmax(60px,1fr))_80px] gap-2 items-center text-sm font-medium text-muted-foreground border-b pb-2">
             <div>Activity</div>
             {weekDates.map((date) => (
               <div key={date.toISOString()} className={cn('text-center', isToday(date) && 'text-primary font-bold')}>
@@ -274,7 +274,7 @@ export function WeeklyPlannerTab() {
                 <div className="text-xs">{format(date, 'd')}</div>
               </div>
             ))}
-            <div className="w-20 text-center">Progress</div>
+            <div className="text-center">Progress</div>
           </div>
 
           {activities.map((activity) => {
@@ -362,20 +362,20 @@ export function WeeklyPlannerTab() {
                   </div>
                 </div>
 
-                <div className="hidden md:grid grid-cols-[1fr_repeat(7,minmax(60px,1fr))_auto] gap-2 items-center">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="truncate">
-                      <div className="font-medium truncate">{activity.title}</div>
+                <div className="hidden md:grid grid-cols-[minmax(200px,2fr)_repeat(7,minmax(60px,1fr))_80px] gap-2 items-center">
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium">{activity.title}</div>
                       <div className="flex items-center gap-2 mt-1">
-                        <Badge className={cn('text-xs', getCategoryColor(activity.category))}>
+                        <Badge className={cn('text-xs whitespace-nowrap', getCategoryColor(activity.category))}>
                           {activity.category}
                         </Badge>
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">
                           {activity.targetCount}x/week
                         </span>
                       </div>
                     </div>
-                    <div className="flex gap-1 ml-2">
+                    <div className="flex gap-1 shrink-0">
                       <Button
                         variant="ghost"
                         size="icon"
@@ -414,7 +414,7 @@ export function WeeklyPlannerTab() {
                     );
                   })}
 
-                  <div className="w-20 flex flex-col items-center gap-1">
+                  <div className="flex flex-col items-center gap-1">
                     <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
                       <div
                         className={cn(
