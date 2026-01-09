@@ -170,13 +170,19 @@ export class DbStorage implements IStorage {
   }
 
   async updateWeeklyActivity(id: string, userId: string, updates: Partial<WeeklyActivity>): Promise<WeeklyActivity | undefined> {
-    const updateData: Partial<WeeklyActivity> = {
-      ...updates,
+    // Only allow updating title, targetCount, and category
+    // weekStart, userId, id are immutable
+    const { title, targetCount, category } = updates;
+    const safeUpdates: Record<string, unknown> = {
       updatedAt: new Date(),
     };
+    if (title !== undefined) safeUpdates.title = title;
+    if (targetCount !== undefined) safeUpdates.targetCount = targetCount;
+    if (category !== undefined) safeUpdates.category = category;
+    
     const [updated] = await db
       .update(weeklyActivities)
-      .set(updateData)
+      .set(safeUpdates)
       .where(and(eq(weeklyActivities.id, id), eq(weeklyActivities.userId, userId)))
       .returning();
     return updated;
@@ -194,6 +200,12 @@ export class DbStorage implements IStorage {
   }
 
   async copyActivitiesFromPreviousWeek(userId: string, targetWeekStart: string, sourceWeekStart: string): Promise<WeeklyActivity[]> {
+    // Check if target week already has activities to prevent duplicates
+    const existingActivities = await this.getWeeklyActivities(userId, targetWeekStart);
+    if (existingActivities.length > 0) {
+      return []; // Don't copy if target week already has activities
+    }
+    
     const sourceActivities = await this.getWeeklyActivities(userId, sourceWeekStart);
     const newActivities: WeeklyActivity[] = [];
     

@@ -25,7 +25,7 @@ A beautiful React + TypeScript Progressive Web App (PWA) with smart task managem
 - `scratchpad` table: id, userId, title, createdAt
 - `push_subscriptions` table: id, userId, endpoint, p256dh, auth, createdAt
 - `user_settings` table: id, userId, reminderTime, reminderEnabled, lastReminderSent, createdAt, updatedAt
-- `weekly_activities` table: id, userId, title, targetCount, category, createdAt, updatedAt
+- `weekly_activities` table: id, userId, weekStart, title, targetCount, category, createdAt, updatedAt (activities are week-specific)
 - `weekly_completions` table: id, activityId, userId, date, createdAt
 
 ## Setup Instructions
@@ -95,14 +95,16 @@ See `PWA_SETUP.md` for detailed setup instructions.
 - Side panel with task management
 
 ### Weekly Planner Tab (Login Required)
-- Define recurring weekly activities (e.g., "Eat blueberries", "Strength training 3x/week")
+- Define weekly activities (e.g., "Eat blueberries", "Strength training 3x/week")
+- **Week-specific activities**: Each week has its own independent set of activities
 - Set target frequency for each activity (1-7 times per week)
 - Categorize activities (Health, Fitness, Nutrition, Learning, Wellness, Other)
 - Week view showing all 7 days with completion checkboxes
 - Click to toggle completion for any day
 - Progress bar showing completion vs target for the week
 - Navigate between weeks (previous/next/current week)
-- Edit and delete activities
+- **Copy from Previous Week**: Empty weeks offer option to copy activities from previous week
+- Edit and delete activities (changes only affect current week)
 - Mobile-responsive layout
 
 ### Settings Tab (Login Required)
@@ -135,6 +137,13 @@ See `PWA_SETUP.md` for detailed setup instructions.
 - Responsive design with mobile-first approach
 
 ## Recent Changes
+- 2026-01-09: Made weekly activities week-specific
+  - Added weekStart column to weekly_activities table for week isolation
+  - Each week now has its own independent set of activities
+  - Changes to activities in one week don't affect other weeks
+  - Added "Copy from Previous Week" feature for empty weeks
+  - Duplicate prevention: copying only works if target week is empty
+  - Backend validation prevents weekStart modification on updates
 - 2026-01-04: Added Weekly Planner tab
   - New database tables: weekly_activities, weekly_completions
   - Define recurring activities with target frequency per week

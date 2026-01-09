@@ -80,7 +80,14 @@ export function WeeklyPlannerTab() {
   const previousWeekStartStr = formatDateString(previousWeekStart);
 
   const { data: activities = [], isLoading: activitiesLoading } = useQuery<WeeklyActivity[]>({
-    queryKey: ['/api/weekly-activities', `?weekStart=${weekStartStr}`],
+    queryKey: ['/api/weekly-activities', weekStartStr],
+    queryFn: async () => {
+      const res = await fetch(`/api/weekly-activities?weekStart=${weekStartStr}`, {
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('Failed to fetch activities');
+      return res.json();
+    },
   });
 
   const { data: completions = [], isLoading: completionsLoading } = useQuery<WeeklyCompletion[]>({
@@ -93,7 +100,7 @@ export function WeeklyPlannerTab() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/weekly-activities', `?weekStart=${weekStartStr}`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/weekly-activities', weekStartStr] });
       setAddDialogOpen(false);
       setNewTitle('');
       setNewCategory('health');
@@ -111,7 +118,7 @@ export function WeeklyPlannerTab() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/weekly-activities', `?weekStart=${weekStartStr}`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/weekly-activities', weekStartStr] });
       setEditDialogOpen(false);
       setEditingActivity(null);
       toast({ title: 'Activity updated' });
@@ -127,7 +134,7 @@ export function WeeklyPlannerTab() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/weekly-activities', `?weekStart=${weekStartStr}`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/weekly-activities', weekStartStr] });
       queryClient.invalidateQueries({ queryKey: ['/api/weekly-completions'] });
       toast({ title: 'Activity deleted' });
     },
@@ -144,9 +151,16 @@ export function WeeklyPlannerTab() {
       });
       return res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/weekly-activities', `?weekStart=${weekStartStr}`] });
-      toast({ title: 'Activities copied from previous week' });
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/weekly-activities', weekStartStr] });
+      if (Array.isArray(data) && data.length === 0) {
+        toast({ 
+          title: 'No activities copied', 
+          description: 'The previous week has no activities, or this week already has activities.' 
+        });
+      } else {
+        toast({ title: `Copied ${data.length} ${data.length === 1 ? 'activity' : 'activities'} from previous week` });
+      }
     },
     onError: () => {
       toast({ title: 'Failed to copy activities', variant: 'destructive' });
