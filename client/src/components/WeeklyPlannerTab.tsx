@@ -82,10 +82,7 @@ export function WeeklyPlannerTab() {
   const { data: activities = [], isLoading: activitiesLoading } = useQuery<WeeklyActivity[]>({
     queryKey: ['/api/weekly-activities', weekStartStr],
     queryFn: async () => {
-      const res = await fetch(`/api/weekly-activities?weekStart=${weekStartStr}`, {
-        credentials: 'include',
-      });
-      if (!res.ok) throw new Error('Failed to fetch activities');
+      const res = await apiRequest('GET', `/api/weekly-activities?weekStart=${weekStartStr}`);
       return res.json();
     },
   });
