@@ -462,7 +462,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Weekly Activities Routes
 
-  // Get all weekly activities for authenticated user
+  // Get weekly activities for a specific week
   app.get('/api/weekly-activities', async (req, res) => {
     try {
       const userId = await getUserFromRequest(req);
@@ -470,7 +470,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: 'Unauthorized' });
       }
 
-      const activities = await storage.getWeeklyActivities(userId);
+      const { weekStart } = req.query;
+      if (!weekStart || typeof weekStart !== 'string') {
+        return res.status(400).json({ error: 'weekStart query parameter required' });
+      }
+
+      const activities = await storage.getWeeklyActivities(userId, weekStart);
       res.json(activities);
     } catch (error) {
       console.error('Error fetching weekly activities:', error);
@@ -478,12 +483,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create a new weekly activity
+  // Create a new weekly activity for a specific week
   app.post('/api/weekly-activities', async (req, res) => {
     try {
       const userId = await getUserFromRequest(req);
       if (!userId) {
         return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      if (!req.body.weekStart) {
+        return res.status(400).json({ error: 'weekStart is required' });
       }
 
       const validatedData = insertWeeklyActivitySchema.parse({ ...req.body, userId });
@@ -492,6 +501,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error creating weekly activity:', error);
       res.status(400).json({ error: 'Failed to create weekly activity' });
+    }
+  });
+
+  // Copy activities from a previous week to target week
+  app.post('/api/weekly-activities/copy', async (req, res) => {
+    try {
+      const userId = await getUserFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const { targetWeekStart, sourceWeekStart } = req.body;
+      if (!targetWeekStart || !sourceWeekStart) {
+        return res.status(400).json({ error: 'targetWeekStart and sourceWeekStart are required' });
+      }
+
+      const activities = await storage.copyActivitiesFromPreviousWeek(userId, targetWeekStart, sourceWeekStart);
+      res.json(activities);
+    } catch (error) {
+      console.error('Error copying weekly activities:', error);
+      res.status(400).json({ error: 'Failed to copy weekly activities' });
     }
   });
 
