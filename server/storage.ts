@@ -29,11 +29,12 @@ export interface IStorage {
   createOrUpdateUserSettings(userId: string, settings: Partial<InsertUserSettings> & { lastReminderSent?: Date }): Promise<UserSettings>;
   getAllUsersWithSettings(): Promise<UserSettings[]>;
 
-  // Weekly Activities
-  getWeeklyActivities(userId: string): Promise<WeeklyActivity[]>;
+  // Weekly Activities (week-scoped)
+  getWeeklyActivities(userId: string, weekStart: string): Promise<WeeklyActivity[]>;
   createWeeklyActivity(activity: InsertWeeklyActivity): Promise<WeeklyActivity>;
   updateWeeklyActivity(id: string, userId: string, updates: Partial<WeeklyActivity>): Promise<WeeklyActivity | undefined>;
   deleteWeeklyActivity(id: string, userId: string): Promise<boolean>;
+  copyActivitiesFromPreviousWeek(userId: string, targetWeekStart: string, sourceWeekStart: string): Promise<WeeklyActivity[]>;
 
   // Weekly Completions
   getWeeklyCompletions(userId: string, startDate: string, endDate: string): Promise<WeeklyCompletion[]>;
@@ -156,9 +157,11 @@ export class DbStorage implements IStorage {
     return await db.select().from(userSettings);
   }
 
-  // Weekly Activities
-  async getWeeklyActivities(userId: string): Promise<WeeklyActivity[]> {
-    return await db.select().from(weeklyActivities).where(eq(weeklyActivities.userId, userId)).orderBy(desc(weeklyActivities.createdAt));
+  // Weekly Activities (week-scoped)
+  async getWeeklyActivities(userId: string, weekStart: string): Promise<WeeklyActivity[]> {
+    return await db.select().from(weeklyActivities)
+      .where(and(eq(weeklyActivities.userId, userId), eq(weeklyActivities.weekStart, weekStart)))
+      .orderBy(desc(weeklyActivities.createdAt));
   }
 
   async createWeeklyActivity(activity: InsertWeeklyActivity): Promise<WeeklyActivity> {
@@ -188,6 +191,24 @@ export class DbStorage implements IStorage {
       .where(and(eq(weeklyActivities.id, id), eq(weeklyActivities.userId, userId)))
       .returning();
     return result.length > 0;
+  }
+
+  async copyActivitiesFromPreviousWeek(userId: string, targetWeekStart: string, sourceWeekStart: string): Promise<WeeklyActivity[]> {
+    const sourceActivities = await this.getWeeklyActivities(userId, sourceWeekStart);
+    const newActivities: WeeklyActivity[] = [];
+    
+    for (const activity of sourceActivities) {
+      const newActivity = await this.createWeeklyActivity({
+        userId: activity.userId,
+        weekStart: targetWeekStart,
+        title: activity.title,
+        targetCount: activity.targetCount,
+        category: activity.category,
+      });
+      newActivities.push(newActivity);
+    }
+    
+    return newActivities;
   }
 
   // Weekly Completions

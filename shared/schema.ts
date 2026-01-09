@@ -48,9 +48,11 @@ export const userSettings = pgTable("user_settings", {
 });
 
 // Weekly activity blueprints - defines what activities a user wants to do each week
+// Each activity is scoped to a specific week (weekStart is the Sunday of that week)
 export const weeklyActivities = pgTable("weekly_activities", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: uuid("user_id").notNull(),
+  weekStart: text("week_start").notNull(), // ISO date string for Sunday of the week (YYYY-MM-DD)
   title: text("title").notNull(),
   targetCount: text("target_count").notNull().default("1"), // e.g., "3" for 3x per week
   category: text("category").notNull().default("health"), // health, fitness, nutrition, etc.
