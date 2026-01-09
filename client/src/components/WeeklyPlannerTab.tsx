@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils';
 import { WeeklyActivity, WeeklyCompletion } from '@shared/schema';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { addDays, format, startOfWeek, endOfWeek, isToday, isSameDay } from 'date-fns';
-import { Check, ChevronLeft, ChevronRight, Plus, Trash2, Edit2 } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, Copy, Plus, Trash2, Edit2 } from 'lucide-react';
 import { useState } from 'react';
 import { EmptyState } from './EmptyState';
 import { useToast } from '@/hooks/use-toast';
@@ -71,11 +71,16 @@ export function WeeklyPlannerTab() {
   const [newTargetCount, setNewTargetCount] = useState('3');
 
   const weekDates = getWeekDates(currentWeekStart);
-  const startDateStr = formatDateString(weekDates[0]!);
+  const weekStartStr = formatDateString(weekDates[0]!);
+  const startDateStr = weekStartStr;
   const endDateStr = formatDateString(weekDates[6]!);
 
+  // Calculate previous week start for copy feature
+  const previousWeekStart = addDays(currentWeekStart, -7);
+  const previousWeekStartStr = formatDateString(previousWeekStart);
+
   const { data: activities = [], isLoading: activitiesLoading } = useQuery<WeeklyActivity[]>({
-    queryKey: ['/api/weekly-activities'],
+    queryKey: ['/api/weekly-activities', `?weekStart=${weekStartStr}`],
   });
 
   const { data: completions = [], isLoading: completionsLoading } = useQuery<WeeklyCompletion[]>({
@@ -84,11 +89,11 @@ export function WeeklyPlannerTab() {
 
   const createActivityMutation = useMutation({
     mutationFn: async (data: { title: string; category: string; targetCount: string }) => {
-      const res = await apiRequest('POST', '/api/weekly-activities', data);
+      const res = await apiRequest('POST', '/api/weekly-activities', { ...data, weekStart: weekStartStr });
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/weekly-activities'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/weekly-activities', `?weekStart=${weekStartStr}`] });
       setAddDialogOpen(false);
       setNewTitle('');
       setNewCategory('health');
@@ -106,7 +111,7 @@ export function WeeklyPlannerTab() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/weekly-activities'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/weekly-activities', `?weekStart=${weekStartStr}`] });
       setEditDialogOpen(false);
       setEditingActivity(null);
       toast({ title: 'Activity updated' });
@@ -122,12 +127,29 @@ export function WeeklyPlannerTab() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/weekly-activities'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/weekly-activities', `?weekStart=${weekStartStr}`] });
       queryClient.invalidateQueries({ queryKey: ['/api/weekly-completions'] });
       toast({ title: 'Activity deleted' });
     },
     onError: () => {
       toast({ title: 'Failed to delete activity', variant: 'destructive' });
+    },
+  });
+
+  const copyFromPreviousWeekMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest('POST', '/api/weekly-activities/copy', {
+        targetWeekStart: weekStartStr,
+        sourceWeekStart: previousWeekStartStr,
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/weekly-activities', `?weekStart=${weekStartStr}`] });
+      toast({ title: 'Activities copied from previous week' });
+    },
+    onError: () => {
+      toast({ title: 'Failed to copy activities', variant: 'destructive' });
     },
   });
 
@@ -259,11 +281,30 @@ export function WeeklyPlannerTab() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       ) : activities.length === 0 ? (
-        <EmptyState
-          icon={Check}
-          title="No weekly activities yet"
-          description="Add activities you want to complete regularly each week, like exercise, reading, or healthy eating."
-        />
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="rounded-full bg-muted p-4 mb-4">
+            <Check className="h-8 w-8 text-muted-foreground" />
+          </div>
+          <h3 className="text-lg font-semibold mb-2">No activities for this week</h3>
+          <p className="text-muted-foreground mb-6 max-w-md">
+            Add activities you want to complete this week, or copy your plan from the previous week.
+          </p>
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={() => copyFromPreviousWeekMutation.mutate()}
+              disabled={copyFromPreviousWeekMutation.isPending}
+              data-testid="button-copy-from-previous"
+            >
+              <Copy className="h-4 w-4 mr-2" />
+              {copyFromPreviousWeekMutation.isPending ? 'Copying...' : 'Copy from Previous Week'}
+            </Button>
+            <Button onClick={() => setAddDialogOpen(true)} data-testid="button-add-activity-empty">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Activity
+            </Button>
+          </div>
+        </div>
       ) : (
         <div className="pt-4 space-y-4">
           <div className="hidden md:grid grid-cols-[minmax(200px,2fr)_repeat(7,minmax(60px,1fr))_80px] gap-2 items-center text-sm font-medium text-muted-foreground border-b pb-2">
