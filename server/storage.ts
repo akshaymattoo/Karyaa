@@ -1,4 +1,4 @@
-import { feedback, FeedbackItem, InsertFeedback, InsertWeeklyActivity, InsertWeeklyCompletion, pushSubscriptions, scratchpad, tasks, userSettings, weeklyActivities, weeklyCompletions, WeeklyActivity, WeeklyCompletion, type InsertPushSubscription, type InsertScratchpad, type InsertTask, type InsertUserSettings, type PushSubscription, type ScratchpadItem, type Task, type UserSettings } from '@shared/schema';
+import { feedback, FeedbackItem, InsertFeedback, InsertNativePushToken, InsertWeeklyActivity, InsertWeeklyCompletion, nativePushTokens, NativePushToken, pushSubscriptions, scratchpad, tasks, userSettings, weeklyActivities, weeklyCompletions, WeeklyActivity, WeeklyCompletion, type InsertPushSubscription, type InsertScratchpad, type InsertTask, type InsertUserSettings, type PushSubscription, type ScratchpadItem, type Task, type UserSettings } from '@shared/schema';
 import { and, desc, eq, gte, lte } from 'drizzle-orm';
 import { db } from './db';
 
@@ -35,6 +35,12 @@ export interface IStorage {
   updateWeeklyActivity(id: string, userId: string, updates: Partial<WeeklyActivity>): Promise<WeeklyActivity | undefined>;
   deleteWeeklyActivity(id: string, userId: string): Promise<boolean>;
   copyActivitiesFromPreviousWeek(userId: string, targetWeekStart: string, sourceWeekStart: string): Promise<WeeklyActivity[]>;
+
+  // Native Push Tokens (Capacitor - iOS/Android)
+  getNativePushTokens(userId: string): Promise<NativePushToken[]>;
+  upsertNativePushToken(token: InsertNativePushToken): Promise<NativePushToken>;
+  deleteNativePushToken(token: string, userId: string): Promise<boolean>;
+  getAllNativePushTokens(): Promise<NativePushToken[]>;
 
   // Weekly Completions
   getWeeklyCompletions(userId: string, startDate: string, endDate: string): Promise<WeeklyCompletion[]>;
@@ -127,6 +133,32 @@ export class DbStorage implements IStorage {
 
   async getAllPushSubscriptions(): Promise<PushSubscription[]> {
     return await db.select().from(pushSubscriptions);
+  }
+
+  async getNativePushTokens(userId: string): Promise<NativePushToken[]> {
+    return await db.select().from(nativePushTokens).where(eq(nativePushTokens.userId, userId));
+  }
+
+  async upsertNativePushToken(token: InsertNativePushToken): Promise<NativePushToken> {
+    const existing = await db.select().from(nativePushTokens)
+      .where(and(eq(nativePushTokens.userId, token.userId), eq(nativePushTokens.token, token.token)));
+    if (existing.length > 0) {
+      return existing[0];
+    }
+    const [newToken] = await db.insert(nativePushTokens).values(token).returning();
+    return newToken;
+  }
+
+  async deleteNativePushToken(token: string, userId: string): Promise<boolean> {
+    const result = await db
+      .delete(nativePushTokens)
+      .where(and(eq(nativePushTokens.token, token), eq(nativePushTokens.userId, userId)))
+      .returning();
+    return result.length > 0;
+  }
+
+  async getAllNativePushTokens(): Promise<NativePushToken[]> {
+    return await db.select().from(nativePushTokens);
   }
 
   async getUserSettings(userId: string): Promise<UserSettings | undefined> {

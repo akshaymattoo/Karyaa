@@ -136,6 +136,31 @@ See `PWA_SETUP.md` for detailed setup instructions.
 - Typography: Inter for text, JetBrains Mono for dates
 - Responsive design with mobile-first approach
 
+## Native App (Capacitor)
+
+Karyaa is configured for native iOS and Android builds via Capacitor. See `CAPACITOR_SETUP.md` for the full build guide.
+
+- **App ID**: `com.karyaa.app`
+- **Web directory**: `dist/public` (Vite build output)
+- **Installed plugins**: `@capacitor/core`, `@capacitor/cli`, `@capacitor/ios`, `@capacitor/android`, `@capacitor/push-notifications`, `@capacitor/status-bar`, `@capacitor/splash-screen`, `@capacitor/app`
+- `client/src/lib/platform.ts` — runtime detection helpers (`isNative()`, `isIOS()`, `isAndroid()`)
+- `usePushNotifications.ts` — detects native vs. web and uses the appropriate push system
+- `App.tsx` — `CapacitorInit` component handles splash screen hide and Android back button
+- `native_push_tokens` DB table — stores FCM/APNs tokens from native devices
+- Backend endpoints: `POST /api/push/native/register` and `POST /api/push/native/unregister`
+
+**To build locally:**
+```bash
+npm run build
+npx cap add ios    # first time only
+npx cap add android  # first time only
+npx cap sync
+npx cap open ios     # opens Xcode
+npx cap open android # opens Android Studio
+```
+
+**FCM Server Key** (`FCM_SERVER_KEY`) is needed as an environment variable to send push notifications to native devices.
+
 ## Recent Changes
 - 2026-01-09: Made weekly activities week-specific
   - Added weekStart column to weekly_activities table for week isolation

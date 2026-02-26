@@ -97,6 +97,20 @@ export const insertUserSettingsSchema = createInsertSchema(userSettings).omit({
   updatedAt: true,
 });
 
+// Native push tokens for iOS (APNs) and Android (FCM) via Capacitor
+export const nativePushTokens = pgTable("native_push_tokens", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  token: text("token").notNull(),
+  platform: text("platform").notNull(), // 'ios' or 'android'
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertNativePushTokenSchema = createInsertSchema(nativePushTokens).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertWeeklyActivitySchema = createInsertSchema(weeklyActivities).omit({
   id: true,
   createdAt: true,
@@ -128,3 +142,6 @@ export type WeeklyActivity = typeof weeklyActivities.$inferSelect;
 
 export type InsertWeeklyCompletion = z.infer<typeof insertWeeklyCompletionSchema>;
 export type WeeklyCompletion = typeof weeklyCompletions.$inferSelect;
+
+export type InsertNativePushToken = z.infer<typeof insertNativePushTokenSchema>;
+export type NativePushToken = typeof nativePushTokens.$inferSelect;

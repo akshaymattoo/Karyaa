@@ -1,4 +1,4 @@
-import { insertFeedbackSchema, insertPushSubscriptionSchema, insertScratchpadSchema, insertTaskSchema, insertUserSettingsSchema, insertWeeklyActivitySchema, insertWeeklyCompletionSchema, type Task } from "@shared/schema";
+import { insertFeedbackSchema, insertNativePushTokenSchema, insertPushSubscriptionSchema, insertScratchpadSchema, insertTaskSchema, insertUserSettingsSchema, insertWeeklyActivitySchema, insertWeeklyCompletionSchema, type Task } from "@shared/schema";
 import { createClient } from "@supabase/supabase-js";
 import type { Express } from "express";
 import { createServer, type Server } from "http";
@@ -401,6 +401,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error sending push notification:', error);
       res.status(500).json({ error: 'Failed to send push notification' });
+    }
+  });
+
+  // Register native push token (iOS APNs / Android FCM via Capacitor)
+  app.post('/api/push/native/register', async (req, res) => {
+    try {
+      const userId = await getUserFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const { token, platform } = req.body;
+      if (!token || !platform || !['ios', 'android'].includes(platform)) {
+        return res.status(400).json({ error: 'token and platform (ios|android) required' });
+      }
+
+      const validated = insertNativePushTokenSchema.parse({ userId, token, platform });
+      const result = await storage.upsertNativePushToken(validated);
+      res.json(result);
+    } catch (error) {
+      console.error('Error registering native push token:', error);
+      res.status(400).json({ error: 'Failed to register native push token' });
+    }
+  });
+
+  // Unregister native push token
+  app.post('/api/push/native/unregister', async (req, res) => {
+    try {
+      const userId = await getUserFromRequest(req);
+      if (!userId) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const { token } = req.body;
+      if (!token) {
+        return res.status(400).json({ error: 'token required' });
+      }
+
+      const success = await storage.deleteNativePushToken(token, userId);
+      res.json({ success });
+    } catch (error) {
+      console.error('Error unregistering native push token:', error);
+      res.status(500).json({ error: 'Failed to unregister native push token' });
     }
   });
 

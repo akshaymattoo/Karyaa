@@ -8,6 +8,8 @@ import {
 } from '@/lib/serviceWorker';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { isNative, isIOS, isAndroid } from '@/lib/platform';
+import { apiRequest } from '@/lib/queryClient';
 
 export function usePushNotifications() {
   const { user } = useAuth();
@@ -18,6 +20,7 @@ export function usePushNotifications() {
   const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
 
   useEffect(() => {
+    if (isNative()) return;
     const initPermission = async () => {
       const currentPermission = await checkNotificationPermission();
       setPermission(currentPermission);
@@ -26,6 +29,7 @@ export function usePushNotifications() {
   }, []);
 
   useEffect(() => {
+    if (isNative()) return;
     const initServiceWorker = async () => {
       try {
         const reg = await registerServiceWorker();
@@ -42,7 +46,83 @@ export function usePushNotifications() {
     initServiceWorker();
   }, []);
 
+  useEffect(() => {
+    if (!isNative() || !user) return;
+
+    const checkNativeSubscription = async () => {
+      try {
+        const { PushNotifications } = await import('@capacitor/push-notifications');
+        const permStatus = await PushNotifications.checkPermissions();
+        setPermission(permStatus.receive === 'granted' ? 'granted' : 'default');
+        setIsSubscribed(permStatus.receive === 'granted');
+      } catch (err) {
+        console.error('Error checking native push permissions:', err);
+      }
+    };
+
+    checkNativeSubscription();
+  }, [user]);
+
+  const subscribeNative = useCallback(async (): Promise<boolean> => {
+    if (!user) {
+      setError('You must be logged in to enable notifications');
+      return false;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const { PushNotifications } = await import('@capacitor/push-notifications');
+
+      let permStatus = await PushNotifications.checkPermissions();
+      if (permStatus.receive === 'prompt') {
+        permStatus = await PushNotifications.requestPermissions();
+      }
+
+      if (permStatus.receive !== 'granted') {
+        setError('Notification permission denied');
+        setIsLoading(false);
+        return false;
+      }
+
+      return await new Promise((resolve) => {
+        PushNotifications.addListener('registration', async (token) => {
+          try {
+            const platform = isIOS() ? 'ios' : 'android';
+            await apiRequest('POST', '/api/push/native/register', { token: token.value, platform });
+            setIsSubscribed(true);
+            setPermission('granted');
+            resolve(true);
+          } catch (err) {
+            console.error('Error registering native push token:', err);
+            setError('Failed to register device for notifications');
+            resolve(false);
+          } finally {
+            setIsLoading(false);
+          }
+        });
+
+        PushNotifications.addListener('registrationError', (err) => {
+          console.error('Native push registration error:', err);
+          setError('Failed to register for notifications');
+          setIsLoading(false);
+          resolve(false);
+        });
+
+        PushNotifications.register();
+      });
+    } catch (err) {
+      console.error('Error subscribing to native push:', err);
+      setError(err instanceof Error ? err.message : 'Failed to subscribe');
+      setIsLoading(false);
+      return false;
+    }
+  }, [user]);
+
   const subscribe = useCallback(async () => {
+    if (isNative()) return subscribeNative();
+
     if (!user) {
       setError('You must be logged in to enable notifications');
       return false;
@@ -109,13 +189,21 @@ export function usePushNotifications() {
       setIsLoading(false);
       return false;
     }
-  }, [user, registration]);
+  }, [user, registration, subscribeNative]);
 
   const unsubscribe = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
     try {
+      if (isNative()) {
+        const { PushNotifications } = await import('@capacitor/push-notifications');
+        await PushNotifications.removeAllListeners();
+        setIsSubscribed(false);
+        setIsLoading(false);
+        return true;
+      }
+
       if (!registration || !registration.pushManager) {
         setError('Service worker not registered');
         setIsLoading(false);
